@@ -1,5 +1,7 @@
 #include "app/HotkeyManager.h"
 
+HotkeyManager::HotkeyManager(QObject *parent) : QObject(parent) {}
+
 bool HotkeyManager::registerHotkey(const QString &hotkey, QString *errorMessage) {
     unregisterHotkey();
     if (!parseHotkey(hotkey, errorMessage)) {
