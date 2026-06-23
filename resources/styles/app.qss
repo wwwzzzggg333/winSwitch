@@ -1,0 +1,68 @@
+QWidget#SwitcherPanel, QMainWindow {
+    background-color: #1e1f24;
+    color: #e6e6e6;
+}
+
+QToolButton#FilterPill {
+    background-color: #2a2c33;
+    border: 1px solid #3a3d46;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #e6e6e6;
+}
+
+QToolButton#FilterPill:checked {
+    background-color: #4a90d9;
+    border-color: #4a90d9;
+    color: white;
+}
+
+QWidget#WindowCard {
+    background-color: #2a2c33;
+    border: 1px solid #3a3d46;
+    border-radius: 8px;
+}
+
+QWidget#WindowCard[selected="true"] {
+    border: 2px solid #4a90d9;
+}
+
+QWidget#ThumbBox {
+    background-color: #18191d;
+    border-radius: 6px;
+}
+
+QLabel#CardTitle {
+    color: #e6e6e6;
+    font-size: 13px;
+}
+
+QLabel#CardPath {
+    color: #b4b8c2;
+    font-size: 12px;
+}
+
+QToolButton#CloseChip, QToolButton#CardClose {
+    background-color: #30323a;
+    border: 1px solid #3a3d46;
+    border-radius: 4px;
+    min-width: 22px;
+    min-height: 22px;
+}
+
+QScrollArea {
+    background: transparent;
+    border: none;
+}
+
+QPlainTextEdit, QLineEdit, QCheckBox, QRadioButton, QLabel {
+    color: #e6e6e6;
+}
+
+QPushButton {
+    background-color: #4a90d9;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+}
