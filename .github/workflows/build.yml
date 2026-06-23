@@ -1,20 +1,33 @@
-name: Build
+name: Build and Release
 
 on:
   push:
     branches: [main, master]
+    tags: ["v*"]
   pull_request:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  QT_VERSION: "6.8.0"
+
 jobs:
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.package }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            package: mySwitcher-linux-x64
+          - os: windows-latest
+            package: mySwitcher-windows-x64
+          - os: macos-latest
+            package: mySwitcher-macos-arm64
 
     steps:
       - name: Checkout
@@ -23,7 +36,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.0"
+          version: ${{ env.QT_VERSION }}
           cache: true
 
       - name: Install Linux dependencies
@@ -38,28 +51,107 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: Upload artifact (Linux)
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mySwitcher-linux
-          path: build/mySwitcher
-          if-no-files-found: error
-
-      - name: Upload artifact (macOS)
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mySwitcher-macos
-          path: build/mySwitcher
-          if-no-files-found: error
-
-      - name: Upload artifact (Windows)
+      - name: Package (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $packageName = "${{ matrix.package }}"
+          $outDir = "packages/$packageName"
+          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+
+          if (Test-Path "build/Release/mySwitcher.exe") {
+            $exe = "build/Release/mySwitcher.exe"
+          } elseif (Test-Path "build/mySwitcher.exe") {
+            $exe = "build/mySwitcher.exe"
+          } else {
+            throw "mySwitcher.exe not found"
+          }
+
+          Copy-Item $exe "$outDir/mySwitcher.exe"
+          windeployqt --release --no-translations "$outDir/mySwitcher.exe"
+          Copy-Item README.md $outDir/
+          Compress-Archive -Path $outDir -DestinationPath "packages/$packageName.zip"
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          package_name="${{ matrix.package }}"
+          app_path="build/mySwitcher.app"
+          if [ ! -d "$app_path" ]; then
+            echo "Expected app bundle at $app_path"
+            ls -la build
+            exit 1
+          fi
+          macdeployqt "$app_path" -always-overwrite
+          mkdir -p packages
+          ditto -c -k --keepParent "$app_path" "packages/${package_name}.zip"
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          package_name="${{ matrix.package }}"
+          out_dir="packages/${package_name}"
+          mkdir -p "${out_dir}/lib" "${out_dir}/plugins/platforms"
+
+          cp build/mySwitcher "${out_dir}/"
+          cp README.md "${out_dir}/"
+
+          # Bundle non-system shared libraries required by the binary.
+          while IFS= read -r lib; do
+            case "$lib" in
+              /lib/*|/lib64/*|/usr/lib/*|/usr/lib64/*) ;;
+              *)
+                if [ -n "$lib" ] && [ -f "$lib" ]; then
+                  cp -L "$lib" "${out_dir}/lib/"
+                fi
+                ;;
+            esac
+          done < <(ldd build/mySwitcher | awk '/=>/ {print $3}')
+
+          if [ -n "${QT_ROOT_DIR:-}" ] && [ -f "${QT_ROOT_DIR}/plugins/platforms/libqxcb.so" ]; then
+            cp "${QT_ROOT_DIR}/plugins/platforms/libqxcb.so" "${out_dir}/plugins/platforms/"
+          fi
+
+          cat > "${out_dir}/run.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export LD_LIBRARY_PATH="${dir}/lib:${LD_LIBRARY_PATH:-}"
+export QT_QPA_PLATFORM_PLUGIN_PATH="${dir}/plugins"
+exec "${dir}/mySwitcher" "$@"
+EOF
+          chmod +x "${out_dir}/run.sh" "${out_dir}/mySwitcher"
+
+          mkdir -p packages
+          (cd packages && zip -r "${package_name}.zip" "${package_name}")
+
+      - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: mySwitcher-windows
-          path: |
-            build/Release/mySwitcher.exe
-            build/mySwitcher.exe
+          name: package-${{ matrix.package }}
+          path: packages/${{ matrix.package }}.zip
           if-no-files-found: error
+
+  release:
+    name: Publish Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: packages
+          pattern: package-*
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/*.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

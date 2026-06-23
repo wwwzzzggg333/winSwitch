@@ -1,6 +1,6 @@
 # mySwitcher
 
-[![Build](https://github.com/OWNER/mySwitcher/actions/workflows/build.yml/badge.svg)](https://github.com/OWNER/mySwitcher/actions/workflows/build.yml)
+[![Build and Release](https://github.com/OWNER/mySwitcher/actions/workflows/build.yml/badge.svg)](https://github.com/OWNER/mySwitcher/actions/workflows/build.yml)
 
 跨平台窗口切换管理器（C++ / Qt 6），功能对标 [WindowsSwitchEx](../WindowsSwitchEx/README.md)：
 
@@ -40,11 +40,22 @@ cmake --build build --config Release
 
 ### GitHub Actions 自动构建
 
-推送到 `main` / `master` 分支后，会在 **Windows / macOS / Linux** 三端自动编译。构建产物可在 Actions 页面的 **Artifacts** 中下载：
+推送到 `main` / `master` 分支后，会在 **Windows / macOS / Linux** 三端自动编译，并打包为 zip。构建产物可在 Actions 页面的 **Artifacts** 中下载：
 
-- `mySwitcher-windows`
-- `mySwitcher-macos`
-- `mySwitcher-linux`
+- `package-mySwitcher-windows-x64.zip`（含 Qt 运行库，可直接运行）
+- `package-mySwitcher-macos-arm64.zip`（`.app` 包）
+- `package-mySwitcher-linux-x64.zip`（含 `run.sh` 启动脚本与 Qt 库）
+
+### 发布 Release
+
+打版本标签并推送后，CI 会自动创建 GitHub Release 并上传上述 zip：
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Release 页面示例：`https://github.com/OWNER/mySwitcher/releases`
 
 > 将 README 顶部的 `OWNER/mySwitcher` 替换为你的 GitHub 用户名/组织名后，CI 徽章才会正确显示。
 
@@ -70,7 +81,7 @@ src/
 
 - 配置格式为 JSON（非 TOML）
 - macOS / Linux 的「关闭窗口」「Finder/Explorer 路径排序」等功能仍在完善中
-- 分发需携带 Qt 运行库（`windeployqt` / `macdeployqt` / 系统包）
+- 分发需携带 Qt 运行库；Release 包已由 CI 通过 `windeployqt` / `macdeployqt` 打包
 
 ## 已知限制
 

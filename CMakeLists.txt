@@ -100,6 +100,12 @@ endif()
 
 if(WIN32)
     set_target_properties(mySwitcher PROPERTIES WIN32_EXECUTABLE TRUE)
+elseif(APPLE)
+    set_target_properties(mySwitcher PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.myswitcher.app"
+        MACOSX_BUNDLE_BUNDLE_NAME "mySwitcher"
+    )
 endif()
 
 install(TARGETS mySwitcher RUNTIME DESTINATION bin)
