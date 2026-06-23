@@ -16,9 +16,6 @@
 #ifdef Bool
 #undef Bool
 #endif
-#ifdef None
-#undef None
-#endif
 #ifdef Status
 #undef Status
 #endif
@@ -82,7 +79,7 @@ public:
         }
         Window root = DefaultRootWindow(dpy);
         Atom netClientList = atom(dpy, "_NET_CLIENT_LIST");
-        Atom actualType = None;
+        Atom actualType = 0;
         int actualFormat = 0;
         unsigned long itemCount = 0;
         unsigned long bytesAfter = 0;
@@ -151,7 +148,7 @@ private:
         if (!XGetWindowAttributes(dpy, win, &attrs) || attrs.map_state != IsViewable) {
             return std::nullopt;
         }
-        Atom actualType = None;
+        Atom actualType = 0;
         int actualFormat = 0;
         unsigned long itemCount = 0;
         unsigned long bytesAfter = 0;

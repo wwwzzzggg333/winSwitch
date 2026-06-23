@@ -9,6 +9,10 @@
 #include <QImage>
 #include <algorithm>
 
+#ifndef PROCESS_NAME_WIN32
+#define PROCESS_NAME_WIN32 0x00000001
+#endif
+
 namespace {
 
 DWORD ownPid() {

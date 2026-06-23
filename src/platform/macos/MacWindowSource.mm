@@ -141,6 +141,10 @@ public:
 class MacThumbnailCapture final : public IThumbnailCapture {
 public:
     ImageRgba capture(qint64 windowId) override {
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+        Q_UNUSED(windowId)
+        return {};
+#else
         CGImageRef image = CGWindowListCreateImage(
             CGRectNull,
             kCGWindowListOptionIncludingWindow,
@@ -169,6 +173,7 @@ public:
         out.height = static_cast<int>(h);
         out.pixels = QByteArray(reinterpret_cast<const char *>(qimg.constBits()), qimg.sizeInBytes());
         return out;
+#endif
     }
 };
 
