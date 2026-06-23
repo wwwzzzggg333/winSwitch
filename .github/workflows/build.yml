@@ -113,14 +113,14 @@ jobs:
             cp "${QT_ROOT_DIR}/plugins/platforms/libqxcb.so" "${out_dir}/plugins/platforms/"
           fi
 
-          cat > "${out_dir}/run.sh" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export LD_LIBRARY_PATH="${dir}/lib:${LD_LIBRARY_PATH:-}"
-export QT_QPA_PLATFORM_PLUGIN_PATH="${dir}/plugins"
-exec "${dir}/mySwitcher" "$@"
-EOF
+          printf '%s\n' \
+            '#!/usr/bin/env bash' \
+            'set -euo pipefail' \
+            'dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"' \
+            'export LD_LIBRARY_PATH="${dir}/lib:${LD_LIBRARY_PATH:-}"' \
+            'export QT_QPA_PLATFORM_PLUGIN_PATH="${dir}/plugins"' \
+            'exec "${dir}/mySwitcher" "$@"' \
+            > "${out_dir}/run.sh"
           chmod +x "${out_dir}/run.sh" "${out_dir}/mySwitcher"
 
           mkdir -p packages
