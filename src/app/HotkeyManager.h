@@ -3,18 +3,7 @@
 #include <QObject>
 #include <QString>
 
-#if defined(Q_OS_WIN)
-#include <QAbstractNativeEventFilter>
-#endif
-
-class HotkeyManager :
-#if defined(Q_OS_WIN)
-    public QObject,
-    public QAbstractNativeEventFilter
-#else
-    public QObject
-#endif
-{
+class HotkeyManager : public QObject {
     Q_OBJECT
 
 public:
@@ -25,10 +14,6 @@ public:
 
 signals:
     void activated();
-
-#if defined(Q_OS_WIN)
-    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
-#endif
 
 private:
     bool parseHotkey(const QString &hotkey, QString *errorMessage);
@@ -42,6 +27,7 @@ private:
     int m_atomId = 0;
     quint32 m_modifiers = 0;
     quint32 m_virtualKey = 0;
+    class QAbstractNativeEventFilter *m_nativeFilter = nullptr;
 #elif defined(Q_OS_MACOS)
     void *m_hotkeyRef = nullptr;
 #elif defined(Q_OS_LINUX)

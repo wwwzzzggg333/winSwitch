@@ -65,6 +65,28 @@ quint32 virtualKeyFromToken(const QString &token, bool *ok) {
     return 0;
 }
 
+class HotkeyNativeFilter final : public QAbstractNativeEventFilter {
+public:
+    explicit HotkeyNativeFilter(HotkeyManager *owner, int atomId) : m_owner(owner), m_atomId(atomId) {}
+
+    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override {
+        Q_UNUSED(result)
+        if (eventType != "windows_generic_MSG" && eventType != "windows_dispatcher_MSG") {
+            return false;
+        }
+        const MSG *msg = static_cast<MSG *>(message);
+        if (msg->message == WM_HOTKEY && msg->wParam == static_cast<WPARAM>(m_atomId)) {
+            emit m_owner->activated();
+            return true;
+        }
+        return false;
+    }
+
+private:
+    HotkeyManager *m_owner = nullptr;
+    int m_atomId = 0;
+};
+
 } // namespace
 
 bool HotkeyManager::parseHotkey(const QString &hotkey, QString *errorMessage) {
@@ -110,27 +132,19 @@ void HotkeyManager::platformRegister(QString *errorMessage) {
         m_registered = false;
         return;
     }
-    qApp->installNativeEventFilter(this);
+    m_nativeFilter = new HotkeyNativeFilter(this, m_atomId);
+    qApp->installNativeEventFilter(m_nativeFilter);
     m_registered = true;
 }
 
 void HotkeyManager::platformUnregister() {
     if (m_atomId != 0) {
         UnregisterHotKey(nullptr, m_atomId);
-        qApp->removeNativeEventFilter(this);
+        if (m_nativeFilter) {
+            qApp->removeNativeEventFilter(m_nativeFilter);
+            delete m_nativeFilter;
+            m_nativeFilter = nullptr;
+        }
         m_atomId = 0;
     }
-}
-
-bool HotkeyManager::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) {
-    Q_UNUSED(result)
-    if (eventType != "windows_generic_MSG" && eventType != "windows_dispatcher_MSG") {
-        return false;
-    }
-    const MSG *msg = static_cast<MSG *>(message);
-    if (msg->message == WM_HOTKEY && msg->wParam == static_cast<WPARAM>(m_atomId)) {
-        emit activated();
-        return true;
-    }
-    return false;
 }
