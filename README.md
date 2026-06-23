@@ -1,6 +1,6 @@
 # mySwitcher
 
-[![Build and Release](https://github.com/OWNER/mySwitcher/actions/workflows/build.yml/badge.svg)](https://github.com/OWNER/mySwitcher/actions/workflows/build.yml)
+[![Build and Release](https://github.com/wwwzzzggg333/mySwitcher/actions/workflows/build.yml/badge.svg)](https://github.com/wwwzzzggg333/mySwitcher/actions/workflows/build.yml)
 
 跨平台窗口切换管理器（C++ / Qt 6），功能对标 [WindowsSwitchEx](../WindowsSwitchEx/README.md)：
 
@@ -55,9 +55,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-Release 页面示例：`https://github.com/OWNER/mySwitcher/releases`
-
-> 将 README 顶部的 `OWNER/mySwitcher` 替换为你的 GitHub 用户名/组织名后，CI 徽章才会正确显示。
+Release 页面：`https://github.com/wwwzzzggg333/mySwitcher/releases`
 
 ## 配置
 
