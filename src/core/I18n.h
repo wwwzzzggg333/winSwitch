@@ -2,11 +2,15 @@
 
 #include "core/Config.h"
 
+#include <QString>
+
 class I18n {
 public:
     enum class Locale { Zh, En };
 
     static I18n fromConfig(const Config &cfg);
+
+    I18n() : m_locale(Locale::En) {}
 
     QString appTitle() const;
     QString settingsTitle() const;

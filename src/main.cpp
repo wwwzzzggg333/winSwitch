@@ -5,8 +5,8 @@
 
 #include <QApplication>
 #include <QFile>
+#include <QMessageBox>
 #include <QStyle>
-#include <QStyleFactory>
 
 static void loadStyleSheet(QApplication &app) {
     QFile file(QStringLiteral(":/styles/app.qss"));

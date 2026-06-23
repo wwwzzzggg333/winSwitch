@@ -108,4 +108,7 @@ elseif(APPLE)
     )
 endif()
 
-install(TARGETS mySwitcher RUNTIME DESTINATION bin)
+install(TARGETS mySwitcher
+    RUNTIME DESTINATION bin
+    BUNDLE DESTINATION .
+)

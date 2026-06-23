@@ -1,16 +1,33 @@
 #include "platform/IWindowSource.h"
 
-#include <X11/Xatom.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-
 #include <QByteArray>
 #include <QCoreApplication>
 #include <QFile>
 #include <QImage>
 #include <QProcessEnvironment>
+
 #include <optional>
 #include <unistd.h>
+
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+
+#ifdef Bool
+#undef Bool
+#endif
+#ifdef None
+#undef None
+#endif
+#ifdef Status
+#undef Status
+#endif
+#ifdef KeyPress
+#undef KeyPress
+#endif
+#ifdef KeyRelease
+#undef KeyRelease
+#endif
 
 namespace {
 

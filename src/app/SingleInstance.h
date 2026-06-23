@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QString>
+
 class SingleInstance {
 public:
     explicit SingleInstance(const QString &key);
