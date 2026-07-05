@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <dwmapi.h>
 #include <psapi.h>
+#include <shellapi.h>
 
 #include <QHash>
 #include <QImage>
@@ -135,6 +136,44 @@ static int safeGetDIBits(
     }
 }
 
+static int dibStride32(int width) {
+    return ((width * 32 + 31) / 32) * 4;
+}
+
+static bool readDdbToImageRgba(HDC hdc, HBITMAP bmp, int width, int height, ImageRgba &out) {
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
+    const int stride = dibStride32(width);
+    QByteArray dib(stride * height, Qt::Uninitialized);
+    BITMAPINFO bi{};
+    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth = width;
+    bi.bmiHeader.biHeight = -height;
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+    const int got = safeGetDIBits(
+        hdc, bmp, 0, static_cast<UINT>(height), dib.data(), &bi, DIB_RGB_COLORS);
+    if (got == 0) {
+        return false;
+    }
+    out.width = width;
+    out.height = height;
+    out.pixels.resize(width * height * 4);
+    for (int y = 0; y < height; ++y) {
+        const uchar *src = reinterpret_cast<const uchar *>(dib.constData() + y * stride);
+        uchar *dst = reinterpret_cast<uchar *>(out.pixels.data() + y * width * 4);
+        for (int x = 0; x < width; ++x) {
+            dst[x * 4 + 0] = src[x * 4 + 2];
+            dst[x * 4 + 1] = src[x * 4 + 1];
+            dst[x * 4 + 2] = src[x * 4 + 0];
+            dst[x * 4 + 3] = 255;
+        }
+    }
+    return true;
+}
+
 ImageRgba imageFromQImage(QImage image) {
     if (image.isNull()) {
         return {};
@@ -209,24 +248,8 @@ ImageRgba captureHicon(HICON hicon, bool destroyIcon) {
 
     ImageRgba image;
     if (drawn) {
-        image.width = kIconDrawSize;
-        image.height = kIconDrawSize;
-        image.pixels.resize(kIconDrawSize * kIconDrawSize * 4);
-        BITMAPINFO bi{};
-        bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bi.bmiHeader.biWidth = kIconDrawSize;
-        bi.bmiHeader.biHeight = -kIconDrawSize;
-        bi.bmiHeader.biPlanes = 1;
-        bi.bmiHeader.biBitCount = 32;
-        bi.bmiHeader.biCompression = BI_RGB;
-        int got = safeGetDIBits(
-                memDc, bmp, 0, kIconDrawSize, image.pixels.data(), &bi, DIB_RGB_COLORS);
-        if (got == 0) {
+        if (!readDdbToImageRgba(memDc, bmp, kIconDrawSize, kIconDrawSize, image)) {
             image = {};
-        } else {
-            for (int i = 0; i < image.pixels.size(); i += 4) {
-                std::swap(image.pixels[i], image.pixels[i + 2]);
-            }
         }
     }
 
@@ -301,25 +324,29 @@ public:
         if (!IsWindow(hwnd)) {
             return {};
         }
-        DWORD_PTR iconResult = 0;
-        SendMessageTimeoutW(
-            hwnd,
-            WM_GETICON,
-            ICON_BIG,
-            0,
-            SMTO_ABORTIFHUNG | SMTO_NORMAL,
-            80,
-            &iconResult);
-        HICON hicon = reinterpret_cast<HICON>(iconResult);
-        bool destroyIcon = hicon != nullptr;
+        DWORD pid = 0;
+        GetWindowThreadProcessId(hwnd, &pid);
+        const QString exePath = exePathOf(pid);
+        if (!exePath.isEmpty()) {
+            SHFILEINFOW sfi{};
+            if (SHGetFileInfoW(
+                    reinterpret_cast<LPCWSTR>(exePath.utf16()),
+                    0,
+                    &sfi,
+                    sizeof(sfi),
+                    SHGFI_ICON | SHGFI_LARGEICON) != 0
+                && sfi.hIcon != nullptr) {
+                return captureHicon(sfi.hIcon, true);
+            }
+        }
+        HICON hicon = reinterpret_cast<HICON>(GetClassLongPtrW(hwnd, GCLP_HICON));
         if (!hicon) {
-            hicon = reinterpret_cast<HICON>(GetClassLongPtrW(hwnd, GCLP_HICON));
-            destroyIcon = false;
+            hicon = reinterpret_cast<HICON>(GetClassLongPtrW(hwnd, GCLP_HICONSM));
         }
         if (!hicon) {
             return {};
         }
-        return captureHicon(hicon, destroyIcon);
+        return captureHicon(hicon, false);
     }
 };
 
@@ -343,6 +370,10 @@ public:
         const int fullW = qMax(1, static_cast<int>(windowRect.right - windowRect.left));
         const int fullH = qMax(1, static_cast<int>(windowRect.bottom - windowRect.top));
         if (fullW < 8 || fullH < 8) {
+            return {};
+        }
+        constexpr int kMaxCaptureDim = 4096;
+        if (fullW > kMaxCaptureDim || fullH > kMaxCaptureDim) {
             return {};
         }
 
@@ -369,29 +400,18 @@ public:
             return {};
         }
         const BOOL ok = PrintWindow(hwnd, memDc, PW_RENDERFULLCONTENT);
-        BITMAPINFO bi{};
-        bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bi.bmiHeader.biWidth = fullW;
-        bi.bmiHeader.biHeight = -fullH;
-        bi.bmiHeader.biPlanes = 1;
-        bi.bmiHeader.biBitCount = 32;
-        bi.bmiHeader.biCompression = BI_RGB;
         ImageRgba image;
-        image.width = fullW;
-        image.height = fullH;
-        image.pixels.resize(fullW * fullH * 4);
-        int got = safeGetDIBits(memDc, bmp, 0, fullH, image.pixels.data(), &bi, DIB_RGB_COLORS);
+        if (!ok || !readDdbToImageRgba(memDc, bmp, fullW, fullH, image)) {
+            SelectObject(memDc, old);
+            DeleteObject(bmp);
+            DeleteDC(memDc);
+            ReleaseDC(nullptr, screenDc);
+            return {};
+        }
         SelectObject(memDc, old);
         DeleteObject(bmp);
         DeleteDC(memDc);
         ReleaseDC(nullptr, screenDc);
-        if (!ok || got == 0) {
-            return {};
-        }
-        for (int i = 0; i < image.pixels.size(); i += 4) {
-            std::swap(image.pixels[i], image.pixels[i + 2]);
-            image.pixels[i + 3] = static_cast<char>(255);
-        }
 
         const int cropX = qBound(0, static_cast<int>(frameRect.left - windowRect.left), fullW - 1);
         const int cropY = qBound(0, static_cast<int>(frameRect.top - windowRect.top), fullH - 1);
@@ -401,6 +421,7 @@ public:
             reinterpret_cast<const uchar *>(image.pixels.constData()),
             fullW,
             fullH,
+            fullW * 4,
             QImage::Format_RGBA8888);
         QImage cropped = src.copy(cropX, cropY, cropW, cropH);
         return downscale(imageFromQImage(cropped));

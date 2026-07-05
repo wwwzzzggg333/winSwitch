@@ -103,11 +103,10 @@ void SwitcherPanel::clearLayout(QLayout *layout) {
     }
     QLayoutItem *child = nullptr;
     while ((child = layout->takeAt(0)) != nullptr) {
-        if (QLayout *sub = child->layout()) {
+        if (QWidget *widget = child->widget()) {
+            widget->deleteLater();
+        } else if (QLayout *sub = child->layout()) {
             clearLayout(sub);
-            delete sub;
-        } else if (QWidget *widget = child->widget()) {
-            delete widget;
         }
         delete child;
     }

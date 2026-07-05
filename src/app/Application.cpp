@@ -195,10 +195,18 @@ QPixmap ApplicationController::toPixmap(const ImageRgba &image) const {
     if (image.width <= 0 || image.height <= 0 || image.pixels.isEmpty()) {
         return {};
     }
+    const int expected = image.width * image.height * 4;
+    if (image.pixels.size() < expected) {
+        AppLog::warn(QStringLiteral("toPixmap: buffer too small %1 < %2")
+                         .arg(image.pixels.size())
+                         .arg(expected));
+        return {};
+    }
     QImage img(
         reinterpret_cast<const uchar *>(image.pixels.constData()),
         image.width,
         image.height,
+        image.width * 4,
         QImage::Format_RGBA8888);
     return QPixmap::fromImage(img.copy());
 }
@@ -236,18 +244,13 @@ void ApplicationController::loadTexturesBatch() {
         }
     }
     m_texturesLoading = !m_pendingIcons.isEmpty() || !m_pendingThumbs.isEmpty();
-    AppLog::info(QStringLiteral("updateTextures: icons=%1 thumbs=%2 pending=%3/%4")
-                     .arg(m_icons.size())
-                     .arg(m_thumbs.size())
-                     .arg(m_pendingIcons.size())
-                     .arg(m_pendingThumbs.size()));
     if (m_texturesLoading) {
-        m_mainWindow->updateTextures(m_icons, m_thumbs);
-        AppLog::info(QStringLiteral("loadTexturesBatch: update done, scheduling next"));
         QTimer::singleShot(0, this, &ApplicationController::loadTexturesBatch);
     } else {
+        AppLog::info(QStringLiteral("loadTexturesBatch: complete, icons=%1 thumbs=%2")
+                         .arg(m_icons.size())
+                         .arg(m_thumbs.size()));
         m_mainWindow->updateTextures(m_icons, m_thumbs);
-        AppLog::info(QStringLiteral("loadTexturesBatch: complete"));
     }
 }
 
