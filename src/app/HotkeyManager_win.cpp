@@ -33,6 +33,9 @@ quint32 virtualKeyFromToken(const QString &token, bool *ok) {
         if (ch >= QChar('A') && ch <= QChar('Z')) {
             return static_cast<quint32>(ch.unicode());
         }
+        if (ch >= QChar('0') && ch <= QChar('9')) {
+            return static_cast<quint32>(ch.unicode());
+        }
         switch (ch.unicode()) {
         case '`':
             return VK_OEM_3;
@@ -44,6 +47,18 @@ quint32 virtualKeyFromToken(const QString &token, bool *ok) {
             return VK_OEM_COMMA;
         case '.':
             return VK_OEM_PERIOD;
+        case ';':
+            return VK_OEM_1;
+        case '\'':
+            return VK_OEM_7;
+        case '[':
+            return VK_OEM_4;
+        case ']':
+            return VK_OEM_6;
+        case '/':
+            return VK_OEM_2;
+        case '\\':
+            return VK_OEM_5;
         default:
             break;
         }
@@ -53,6 +68,30 @@ quint32 virtualKeyFromToken(const QString &token, bool *ok) {
     }
     if (token.compare(QStringLiteral("Tab"), Qt::CaseInsensitive) == 0) {
         return VK_TAB;
+    }
+    if (token.compare(QStringLiteral("Up"), Qt::CaseInsensitive) == 0) {
+        return VK_UP;
+    }
+    if (token.compare(QStringLiteral("Down"), Qt::CaseInsensitive) == 0) {
+        return VK_DOWN;
+    }
+    if (token.compare(QStringLiteral("Left"), Qt::CaseInsensitive) == 0) {
+        return VK_LEFT;
+    }
+    if (token.compare(QStringLiteral("Right"), Qt::CaseInsensitive) == 0) {
+        return VK_RIGHT;
+    }
+    if (token.compare(QStringLiteral("Home"), Qt::CaseInsensitive) == 0) {
+        return VK_HOME;
+    }
+    if (token.compare(QStringLiteral("End"), Qt::CaseInsensitive) == 0) {
+        return VK_END;
+    }
+    if (token.compare(QStringLiteral("PgUp"), Qt::CaseInsensitive) == 0) {
+        return VK_PRIOR;
+    }
+    if (token.compare(QStringLiteral("PgDn"), Qt::CaseInsensitive) == 0) {
+        return VK_NEXT;
     }
     if (token.startsWith(QStringLiteral("F"), Qt::CaseInsensitive)) {
         bool okNum = false;
@@ -95,6 +134,7 @@ bool HotkeyManager::parseHotkey(const QString &hotkey, QString *errorMessage) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("Empty hotkey");
         }
+        m_lastError = HotkeyError::ParseFailed;
         return false;
     }
     quint32 mods = 0;
@@ -106,6 +146,7 @@ bool HotkeyManager::parseHotkey(const QString &hotkey, QString *errorMessage) {
             if (errorMessage) {
                 *errorMessage = QStringLiteral("Unknown modifier: %1").arg(parts.at(i));
             }
+            m_lastError = HotkeyError::ParseFailed;
             return false;
         }
         mods |= mod;
@@ -116,6 +157,7 @@ bool HotkeyManager::parseHotkey(const QString &hotkey, QString *errorMessage) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("Unknown key: %1").arg(keyToken);
         }
+        m_lastError = HotkeyError::ParseFailed;
         return false;
     }
     m_modifiers = mods;
@@ -129,12 +171,14 @@ void HotkeyManager::platformRegister(QString *errorMessage) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("RegisterHotKey failed (%1)").arg(GetLastError());
         }
+        m_lastError = HotkeyError::RegisterFailed;
         m_registered = false;
         return;
     }
     m_nativeFilter = new HotkeyNativeFilter(this, m_atomId);
     qApp->installNativeEventFilter(m_nativeFilter);
     m_registered = true;
+    m_lastError = HotkeyError::None;
 }
 
 void HotkeyManager::platformUnregister() {

@@ -11,6 +11,14 @@ QToolButton#FilterPill {
     color: #e6e6e6;
 }
 
+QLineEdit#SearchEdit {
+    background-color: #2a2c33;
+    border: 1px solid #3a3d46;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #e6e6e6;
+}
+
 QToolButton#FilterPill:checked {
     background-color: #4a90d9;
     border-color: #4a90d9;

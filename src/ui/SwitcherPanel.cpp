@@ -5,12 +5,33 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QKeyEvent>
+#include <QLineEdit>
 #include <QScrollArea>
 #include <QToolButton>
 #include <QVBoxLayout>
 
 SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i18n(i18n) {
     setObjectName(QStringLiteral("SwitcherPanel"));
+    auto *root = new QVBoxLayout(this);
+    root->setContentsMargins(10, 10, 10, 10);
+    root->setSpacing(8);
+
+    m_searchEdit = new QLineEdit;
+    m_searchEdit->setObjectName(QStringLiteral("SearchEdit"));
+    m_searchEdit->setPlaceholderText(m_i18n.searchPlaceholder());
+    m_searchEdit->setClearButtonEnabled(true);
+    m_searchEdit->installEventFilter(this);
+    connect(m_searchEdit, &QLineEdit::textChanged, this, [this](const QString &text) {
+        m_state.setSearchText(text);
+        rebuild();
+    });
+    root->addWidget(m_searchEdit);
+
+    m_dynamicHost = new QWidget;
+    auto *dynamicLayout = new QVBoxLayout(m_dynamicHost);
+    dynamicLayout->setContentsMargins(0, 0, 0, 0);
+    dynamicLayout->setSpacing(8);
+    root->addWidget(m_dynamicHost, 1);
 }
 
 void SwitcherPanel::setData(
@@ -22,7 +43,11 @@ void SwitcherPanel::setData(
     m_icons = icons;
     m_thumbs = thumbs;
     m_showThumbnails = showThumbnails;
+    m_searchEdit->blockSignals(true);
+    m_searchEdit->clear();
+    m_searchEdit->blockSignals(false);
     rebuild();
+    m_searchEdit->setFocus();
 }
 
 void SwitcherPanel::updateTextures(const QHash<qint64, QPixmap> &icons, const QHash<qint64, QPixmap> &thumbs) {
@@ -32,18 +57,15 @@ void SwitcherPanel::updateTextures(const QHash<qint64, QPixmap> &icons, const QH
 }
 
 void SwitcherPanel::rebuild() {
-    if (layout()) {
-        QLayoutItem *child = nullptr;
-        while ((child = layout()->takeAt(0)) != nullptr) {
-            delete child->widget();
-            delete child;
-        }
-        delete layout();
+    QLayout *hostLayout = m_dynamicHost->layout();
+    if (!hostLayout) {
+        return;
     }
-
-    auto *root = new QVBoxLayout(this);
-    root->setContentsMargins(10, 10, 10, 10);
-    root->setSpacing(8);
+    QLayoutItem *child = nullptr;
+    while ((child = hostLayout->takeAt(0)) != nullptr) {
+        delete child->widget();
+        delete child;
+    }
 
     auto *filterScroll = new QScrollArea;
     filterScroll->setWidgetResizable(true);
@@ -99,7 +121,7 @@ void SwitcherPanel::rebuild() {
     }
     filterLayout->addStretch();
     filterScroll->setWidget(filterRow);
-    root->addWidget(filterScroll);
+    hostLayout->addWidget(filterScroll);
 
     auto *contentScroll = new QScrollArea;
     contentScroll->setWidgetResizable(true);
@@ -108,21 +130,21 @@ void SwitcherPanel::rebuild() {
     auto *contentLayout = new QVBoxLayout(content);
     contentLayout->setSpacing(12);
 
-    const QVector<const AppGroup *> groups = m_state.visibleGroups();
+    const QVector<AppGroup> groups = m_state.visibleGroups();
     for (int gi = 0; gi < groups.size(); ++gi) {
-        const AppGroup *g = groups.at(gi);
+        const AppGroup &g = groups.at(gi);
         auto *header = new QHBoxLayout;
-        auto *title = new QLabel(QStringLiteral("%1 %2").arg(g->appName, m_i18n.windowCount(g->windows.size())));
+        auto *title = new QLabel(QStringLiteral("%1 %2").arg(g.appName, m_i18n.windowCount(g.windows.size())));
         title->setObjectName(QStringLiteral("GroupTitle"));
         header->addWidget(title);
         header->addStretch();
 
         auto *pinBtn = new QToolButton;
-        pinBtn->setText(g->pinned ? m_i18n.pinned() : m_i18n.pin());
+        pinBtn->setText(g.pinned ? m_i18n.pinned() : m_i18n.pin());
         connect(pinBtn, &QToolButton::clicked, this, [this, g]() {
             MainWindow::PanelAction action;
             action.type = MainWindow::PanelActionType::TogglePin;
-            action.exePath = g->exePath;
+            action.exePath = g.exePath;
             emit actionTriggered(action);
         });
         header->addWidget(pinBtn);
@@ -132,7 +154,7 @@ void SwitcherPanel::rebuild() {
         connect(closeAllBtn, &QToolButton::clicked, this, [this, g]() {
             MainWindow::PanelAction action;
             action.type = MainWindow::PanelActionType::CloseGroup;
-            action.exePath = g->exePath;
+            action.exePath = g.exePath;
             emit actionTriggered(action);
         });
         header->addWidget(closeAllBtn);
@@ -142,8 +164,8 @@ void SwitcherPanel::rebuild() {
         auto *grid = new QGridLayout(gridHost);
         grid->setSpacing(10);
         const int perRow = qMax(1, width() / 230);
-        for (int wi = 0; wi < g->windows.size(); ++wi) {
-            const WindowItem &item = g->windows.at(wi);
+        for (int wi = 0; wi < g.windows.size(); ++wi) {
+            const WindowItem &item = g.windows.at(wi);
             const bool selected = m_state.selectedGroup == gi && m_state.selectedWindow == wi;
             auto *card = new WindowCard(
                 item,
@@ -169,12 +191,34 @@ void SwitcherPanel::rebuild() {
     }
     contentLayout->addStretch();
     contentScroll->setWidget(content);
-    root->addWidget(contentScroll, 1);
+    hostLayout->addWidget(contentScroll, 1);
+}
+
+bool SwitcherPanel::eventFilter(QObject *obj, QEvent *event) {
+    if (obj == m_searchEdit && event->type() == QEvent::KeyPress) {
+        auto *ke = static_cast<QKeyEvent *>(event);
+        switch (ke->key()) {
+        case Qt::Key_Up:
+        case Qt::Key_Down:
+        case Qt::Key_Return:
+        case Qt::Key_Enter:
+        case Qt::Key_Escape:
+            keyPressEvent(ke);
+            return true;
+        default:
+            break;
+        }
+    }
+    return QWidget::eventFilter(obj, event);
 }
 
 void SwitcherPanel::keyPressEvent(QKeyEvent *event) {
     switch (event->key()) {
     case Qt::Key_Escape:
+        if (!m_searchEdit->text().isEmpty()) {
+            m_searchEdit->clear();
+            break;
+        }
         emitAction({MainWindow::PanelActionType::Dismiss});
         break;
     case Qt::Key_Return:

@@ -18,12 +18,18 @@ signals:
 
 private:
     void buildUi();
+    QWidget *buildGeneralTab();
+    QWidget *buildDiagnosticsTab();
+    Config collectFromUi() const;
     void saveFromUi();
+    void onImportConfig();
+    void onExportConfig();
 
     I18n m_i18n;
     Config m_config;
     class HotkeyEdit *m_hotkeyEdit = nullptr;
     class QCheckBox *m_thumbnail = nullptr;
+    class QCheckBox *m_mruEnabled = nullptr;
     class QPlainTextEdit *m_excluded = nullptr;
     class QPlainTextEdit *m_pinned = nullptr;
     class QButtonGroup *m_languageGroup = nullptr;

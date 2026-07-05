@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/HotkeyManager.h"
 #include "core/Config.h"
 #include "core/I18n.h"
 #include "core/WindowModel.h"
@@ -10,8 +11,6 @@
 #include <QPixmap>
 #include <QSystemTrayIcon>
 #include <memory>
-
-class HotkeyManager;
 
 class ApplicationController : public QObject {
     Q_OBJECT
@@ -38,7 +37,9 @@ private:
     void hideAll();
     void refreshWindows();
     void loadTexturesBatch();
+    void recordActivation(qint64 windowId);
     QPixmap toPixmap(const ImageRgba &image) const;
+    void showHotkeyFailure(const QString &hotkey, const QString &err, HotkeyManager::HotkeyError kind);
 
     Config m_config;
     I18n m_i18n;
@@ -54,6 +55,7 @@ private:
 
     QHash<qint64, QPixmap> m_icons;
     QHash<qint64, QPixmap> m_thumbs;
+    QHash<qint64, qint64> m_windowMru;
     QVector<qint64> m_pendingIcons;
     QVector<qint64> m_pendingThumbs;
     bool m_texturesLoading = false;

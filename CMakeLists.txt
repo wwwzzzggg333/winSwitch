@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(mySwitcher VERSION 0.1.0 LANGUAGES CXX)
+project(mySwitcher VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -76,6 +76,10 @@ qt_add_executable(mySwitcher
 target_include_directories(mySwitcher PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${LINUX_X11_INCLUDES}
+)
+
+target_compile_definitions(mySwitcher PRIVATE
+    MYSWITCHER_VERSION="${PROJECT_VERSION}"
 )
 
 target_link_libraries(mySwitcher PRIVATE

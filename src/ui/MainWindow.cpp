@@ -4,8 +4,10 @@
 
 #include <QApplication>
 #include <QCloseEvent>
+#include <QCursor>
 #include <QEvent>
 #include <QFocusEvent>
+#include <QGuiApplication>
 #include <QScreen>
 
 MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
@@ -28,8 +30,16 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     });
 }
 
+QScreen *MainWindow::targetScreen() const {
+    QScreen *screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) {
+        screen = QApplication::primaryScreen();
+    }
+    return screen;
+}
+
 QSize MainWindow::panelSize() const {
-    QScreen *screen = QApplication::primaryScreen();
+    QScreen *screen = targetScreen();
     const QSize monitor = screen ? screen->availableGeometry().size() : QSize(1920, 1080);
     const int autoW = qBound(840, static_cast<int>(monitor.width() * 0.70), 1280);
     const int autoH = qBound(540, static_cast<int>(monitor.height() * 0.62), 820);
@@ -38,7 +48,7 @@ QSize MainWindow::panelSize() const {
 }
 
 void MainWindow::centerOnScreen() {
-    QScreen *screen = QApplication::primaryScreen();
+    QScreen *screen = targetScreen();
     if (!screen) {
         return;
     }
@@ -63,7 +73,7 @@ void MainWindow::showPanel(
 
 void MainWindow::showSettings(Config config) {
     m_settings->setConfig(config);
-    resize(460, 520);
+    resize(520, 560);
     centerOnScreen();
     setCentralWidget(m_settings);
     show();

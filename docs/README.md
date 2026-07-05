@@ -167,6 +167,26 @@
 - 平台/API 限制
 - 风险点与改进方向
 
+### 9. v0.2 功能改进设计文档（执行版）
+
+文件：
+
+- [v0.2-feature-improvement-design.md](v0.2-feature-improvement-design.md)
+
+适合场景：
+
+- 直接交给开发或 AI 执行模型实施 v0.2
+- 查阅每个功能的代码级设计与验收标准
+- 实施过程中对照逐文件改动清单
+
+核心内容：
+
+- 七项改进的完整设计（六大主题 + Windows 缩略图修复）
+- 数据结构与接口定稿
+- 逐文件改动清单
+- i18n 新增文案（中英双语）
+- 验收标准与回归清单
+
 ## 推荐用法
 
 ### 面向开发
@@ -176,8 +196,9 @@
 1. `project-feature-platform-analysis.md`
 2. `product-execution-spec.md`
 3. `v0.2-implementation-breakdown.md`
-4. `thumbnail-capture-technical-analysis.md`
-5. `project-roadmap.md`
+4. `v0.2-feature-improvement-design.md`
+5. `thumbnail-capture-technical-analysis.md`
+6. `project-roadmap.md`
 
 ### 面向产品
 

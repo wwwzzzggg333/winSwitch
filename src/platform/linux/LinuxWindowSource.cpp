@@ -1,4 +1,5 @@
 #include "platform/IWindowSource.h"
+#include "platform/PlatformCapabilities.h"
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -254,4 +255,27 @@ std::unique_ptr<IIconCapture> createIconCaptureImpl() {
 
 std::unique_ptr<IThumbnailCapture> createThumbnailCaptureImpl() {
     return std::make_unique<LinuxThumbnailCapture>();
+}
+
+PlatformCapabilities queryPlatformCapabilitiesImpl() {
+    PlatformCapabilities caps;
+    caps.platformName = QStringLiteral("Linux");
+    if (isWaylandSession()) {
+        caps.sessionType = QStringLiteral("Wayland");
+        caps.hotkey = CapabilityLevel::None;
+        caps.activate = CapabilityLevel::None;
+        caps.closeWindow = CapabilityLevel::None;
+        caps.icon = CapabilityLevel::None;
+        caps.thumbnail = CapabilityLevel::None;
+        caps.folderPath = CapabilityLevel::None;
+    } else {
+        caps.sessionType = QStringLiteral("X11");
+        caps.hotkey = CapabilityLevel::None;
+        caps.activate = CapabilityLevel::Full;
+        caps.closeWindow = CapabilityLevel::Full;
+        caps.icon = CapabilityLevel::None;
+        caps.thumbnail = CapabilityLevel::Partial;
+        caps.folderPath = CapabilityLevel::None;
+    }
+    return caps;
 }

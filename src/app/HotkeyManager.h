@@ -7,10 +7,18 @@ class HotkeyManager : public QObject {
     Q_OBJECT
 
 public:
+    enum class HotkeyError {
+        None,
+        ParseFailed,
+        RegisterFailed,
+        PlatformUnsupported
+    };
+
     explicit HotkeyManager(QObject *parent = nullptr);
 
     bool registerHotkey(const QString &hotkey, QString *errorMessage = nullptr);
     void unregisterHotkey();
+    HotkeyError lastError() const { return m_lastError; }
 
 signals:
     void activated();
@@ -22,6 +30,7 @@ private:
 
     QString m_hotkey;
     bool m_registered = false;
+    HotkeyError m_lastError = HotkeyError::None;
 
 #if defined(Q_OS_WIN)
     int m_atomId = 0;

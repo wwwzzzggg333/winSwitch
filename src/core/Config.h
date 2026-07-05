@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QHash>
 #include <QString>
 #include <QStringList>
 
@@ -11,9 +12,14 @@ struct Config {
     QString language = QStringLiteral("auto");
     QStringList pinned;
     QStringList excluded = {QStringLiteral("TextInputHost.exe")};
+    bool mruEnabled = true;
+    QHash<QString, qint64> mruTimes;
 
     static Config load();
     bool save() const;
+
+    bool exportTo(const QString &path, QString *error = nullptr) const;
+    static bool importFrom(const QString &path, Config *out, QString *error = nullptr);
 
     static QString dataDir();
     static QString configPath();

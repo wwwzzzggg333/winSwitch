@@ -1,4 +1,5 @@
 #include "platform/IWindowSource.h"
+#include "platform/PlatformCapabilities.h"
 
 #import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
@@ -189,4 +190,21 @@ std::unique_ptr<IIconCapture> createIconCaptureImpl() {
 
 std::unique_ptr<IThumbnailCapture> createThumbnailCaptureImpl() {
     return std::make_unique<MacThumbnailCapture>();
+}
+
+PlatformCapabilities queryPlatformCapabilitiesImpl() {
+    PlatformCapabilities caps;
+    caps.platformName = QStringLiteral("macOS");
+    caps.sessionType = QStringLiteral("Desktop");
+    caps.hotkey = CapabilityLevel::None;
+    caps.activate = CapabilityLevel::Partial;
+    caps.closeWindow = CapabilityLevel::None;
+    caps.icon = CapabilityLevel::None;
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+    caps.thumbnail = CapabilityLevel::None;
+#else
+    caps.thumbnail = CapabilityLevel::Partial;
+#endif
+    caps.folderPath = CapabilityLevel::Partial;
+    return caps;
 }

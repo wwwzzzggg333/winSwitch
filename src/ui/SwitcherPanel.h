@@ -8,6 +8,8 @@
 #include <QPixmap>
 #include <QWidget>
 
+class QLineEdit;
+
 class SwitcherPanel : public QWidget {
     Q_OBJECT
 
@@ -26,6 +28,7 @@ signals:
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     void rebuild();
@@ -36,4 +39,6 @@ private:
     QHash<qint64, QPixmap> m_icons;
     QHash<qint64, QPixmap> m_thumbs;
     bool m_showThumbnails = true;
+    QLineEdit *m_searchEdit = nullptr;
+    QWidget *m_dynamicHost = nullptr;
 };

@@ -9,7 +9,10 @@ bool HotkeyManager::parseHotkey(const QString &hotkey, QString *errorMessage) {
 }
 
 void HotkeyManager::platformRegister(QString *errorMessage) {
-    Q_UNUSED(errorMessage)
+    if (errorMessage) {
+        *errorMessage = QStringLiteral("Global hotkeys are not implemented on macOS yet.");
+    }
+    m_lastError = HotkeyError::PlatformUnsupported;
     m_registered = false;
 }
 

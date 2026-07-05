@@ -2,6 +2,7 @@
 #include "app/HotkeyManager.h"
 
 #include <QApplication>
+#include <QDateTime>
 #include <QMenu>
 #include <QMessageBox>
 #include <QSet>
@@ -14,6 +15,16 @@ ApplicationController::~ApplicationController() {
     if (m_hotkey) {
         m_hotkey->unregisterHotkey();
     }
+}
+
+void ApplicationController::showHotkeyFailure(
+    const QString &hotkey,
+    const QString &err,
+    HotkeyManager::HotkeyError kind) {
+    const QString message = kind == HotkeyManager::HotkeyError::PlatformUnsupported
+        ? m_i18n.hotkeyPlatformUnsupported()
+        : m_i18n.hotkeyFailedMessage(hotkey, err);
+    QMessageBox::warning(m_mainWindow, m_i18n.hotkeyFailedTitle(), message);
 }
 
 bool ApplicationController::initialize() {
@@ -49,10 +60,7 @@ bool ApplicationController::initialize() {
     connect(m_hotkey, &HotkeyManager::activated, this, &ApplicationController::onHotkeyActivated);
     QString hotkeyError;
     if (!m_hotkey->registerHotkey(m_config.hotkey, &hotkeyError)) {
-        QMessageBox::warning(
-            m_mainWindow,
-            m_i18n.hotkeyFailedTitle(),
-            m_i18n.hotkeyFailedMessage(m_config.hotkey, hotkeyError));
+        showHotkeyFailure(m_config.hotkey, hotkeyError, m_hotkey->lastError());
     }
 
     if (!Config::welcomeShown()) {
@@ -107,7 +115,12 @@ void ApplicationController::hideAll() {
 
 void ApplicationController::refreshWindows() {
     const QList<RawWindow> raws = m_windowSource->listWindows();
-    const QVector<AppGroup> groups = buildGroups(raws, m_config.pinned, m_config.excluded);
+    const QVector<AppGroup> groups = buildGroups(
+        raws,
+        m_config.pinned,
+        m_config.excluded,
+        m_config.mruEnabled ? m_config.mruTimes : QHash<QString, qint64>{},
+        m_config.mruEnabled ? m_windowMru : QHash<qint64, qint64>{});
     Filter filter;
     filter.kind = FilterKind::All;
     m_state = AppState::create(groups, filter);
@@ -132,6 +145,13 @@ void ApplicationController::refreshWindows() {
             ++it;
         }
     }
+    for (auto it = m_windowMru.begin(); it != m_windowMru.end();) {
+        if (!ids.contains(it.key())) {
+            it = m_windowMru.erase(it);
+        } else {
+            ++it;
+        }
+    }
 
     m_pendingIcons.clear();
     m_pendingThumbs.clear();
@@ -144,6 +164,24 @@ void ApplicationController::refreshWindows() {
         }
     }
     m_texturesLoading = !m_pendingIcons.isEmpty() || !m_pendingThumbs.isEmpty();
+}
+
+void ApplicationController::recordActivation(qint64 windowId) {
+    if (!m_config.mruEnabled) {
+        return;
+    }
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    m_windowMru.insert(windowId, now);
+    for (const AppGroup &g : m_state.groups) {
+        for (const WindowItem &w : g.windows) {
+            if (w.windowId == windowId) {
+                const QString fname = g.exePath.section('/', -1).section('\\', -1).toLower();
+                m_config.mruTimes.insert(fname, now);
+                m_config.save();
+                return;
+            }
+        }
+    }
 }
 
 QPixmap ApplicationController::toPixmap(const ImageRgba &image) const {
@@ -192,6 +230,7 @@ void ApplicationController::onPanelAction() {
     const auto action = m_mainWindow->lastPanelAction();
     switch (action.type) {
     case MainWindow::PanelActionType::Activate:
+        recordActivation(action.windowId);
         m_windowSource->activate(action.windowId);
         hideAll();
         break;
@@ -200,6 +239,7 @@ void ApplicationController::onPanelAction() {
         m_state.removeWindow(action.windowId);
         m_icons.remove(action.windowId);
         m_thumbs.remove(action.windowId);
+        m_windowMru.remove(action.windowId);
         m_mainWindow->showPanel(m_state, m_icons, m_thumbs, m_config.thumbnail);
         break;
     case MainWindow::PanelActionType::CloseGroup:
@@ -209,6 +249,7 @@ void ApplicationController::onPanelAction() {
                     m_windowSource->closeWindow(w.windowId);
                     m_icons.remove(w.windowId);
                     m_thumbs.remove(w.windowId);
+                    m_windowMru.remove(w.windowId);
                 }
                 break;
             }
@@ -238,7 +279,28 @@ void ApplicationController::onPanelAction() {
 }
 
 void ApplicationController::onSettingsSaved(const Config &cfg) {
+    const QString oldHotkey = m_config.hotkey;
     m_config = cfg;
     m_config.save();
+
+    if (m_config.hotkey != oldHotkey) {
+        m_hotkey->unregisterHotkey();
+        QString err;
+        if (!m_hotkey->registerHotkey(m_config.hotkey, &err)) {
+            const auto kind = m_hotkey->lastError();
+            QString rollbackErr;
+            m_hotkey->registerHotkey(oldHotkey, &rollbackErr);
+            m_config.hotkey = oldHotkey;
+            m_config.save();
+            const QString reason = kind == HotkeyManager::HotkeyError::PlatformUnsupported
+                ? m_i18n.hotkeyPlatformUnsupported()
+                : m_i18n.hotkeyFailedMessage(cfg.hotkey, err);
+            QMessageBox::warning(
+                m_mainWindow,
+                m_i18n.hotkeyFailedTitle(),
+                m_i18n.hotkeyRolledBack(oldHotkey, reason));
+        }
+        m_tray->setToolTip(m_i18n.trayTooltip(m_config.hotkey));
+    }
     hideAll();
 }

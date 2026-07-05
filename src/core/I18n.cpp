@@ -79,8 +79,8 @@ QString I18n::hotkeyLabel() const {
 
 QString I18n::hotkeyHint() const {
     return m_locale == Locale::Zh
-        ? QStringLiteral("修改后需重启程序生效。点击输入框后按下新的组合键。")
-        : QStringLiteral("Restart required after change. Click the field and press a new shortcut.");
+        ? QStringLiteral("点击后按下组合键；保存后立即生效")
+        : QStringLiteral("Click and press a combination; applies immediately after saving");
 }
 
 QString I18n::hotkeyListening() const {
@@ -89,6 +89,10 @@ QString I18n::hotkeyListening() const {
 
 QString I18n::showThumbnails() const {
     return m_locale == Locale::Zh ? QStringLiteral("显示窗口缩略图") : QStringLiteral("Show window thumbnails");
+}
+
+QString I18n::mruEnabled() const {
+    return m_locale == Locale::Zh ? QStringLiteral("按最近使用排序") : QStringLiteral("Sort by recently used");
 }
 
 QString I18n::languageLabel() const {
@@ -166,6 +170,18 @@ QString I18n::hotkeyFailedMessage(const QString &hotkey, const QString &err) con
         : QStringLiteral("Failed to register hotkey \"%1\":\n%2").arg(hotkey, err);
 }
 
+QString I18n::hotkeyPlatformUnsupported() const {
+    return m_locale == Locale::Zh
+        ? QStringLiteral("当前平台尚未支持全局热键，请通过托盘图标唤出面板")
+        : QStringLiteral("Global hotkeys are not supported on this platform yet. Use the tray icon to open the panel.");
+}
+
+QString I18n::hotkeyRolledBack(const QString &oldHotkey, const QString &reason) const {
+    return m_locale == Locale::Zh
+        ? QStringLiteral("新热键设置失败，已恢复为 %1。原因：%2").arg(oldHotkey, reason)
+        : QStringLiteral("Failed to apply the new hotkey; restored %1. Reason: %2").arg(oldHotkey, reason);
+}
+
 QString I18n::startupFailedTitle() const {
     return m_locale == Locale::Zh ? QStringLiteral("启动失败") : QStringLiteral("Startup failed");
 }
@@ -175,4 +191,114 @@ QString I18n::startupFailedMessage(const QString &glowErr, const QString &wgpuEr
     return m_locale == Locale::Zh
         ? QStringLiteral("程序启动失败：\n%1\n\n日志：%2").arg(glowErr, logPath)
         : QStringLiteral("Failed to start:\n%1\n\nLog: %2").arg(glowErr, logPath);
+}
+
+QString I18n::searchPlaceholder() const {
+    return m_locale == Locale::Zh ? QStringLiteral("搜索窗口标题、应用名或路径…")
+                                  : QStringLiteral("Search title, app or path...");
+}
+
+QString I18n::settingsTabGeneral() const {
+    return m_locale == Locale::Zh ? QStringLiteral("常规") : QStringLiteral("General");
+}
+
+QString I18n::settingsTabDiagnostics() const {
+    return m_locale == Locale::Zh ? QStringLiteral("诊断") : QStringLiteral("Diagnostics");
+}
+
+QString I18n::saveButton() const {
+    return m_locale == Locale::Zh ? QStringLiteral("保存") : QStringLiteral("Save");
+}
+
+QString I18n::diagAppVersion() const {
+    return m_locale == Locale::Zh ? QStringLiteral("应用版本") : QStringLiteral("App version");
+}
+
+QString I18n::diagPlatform() const {
+    return m_locale == Locale::Zh ? QStringLiteral("平台") : QStringLiteral("Platform");
+}
+
+QString I18n::diagSessionType() const {
+    return m_locale == Locale::Zh ? QStringLiteral("会话类型") : QStringLiteral("Session type");
+}
+
+QString I18n::diagHotkey() const {
+    return m_locale == Locale::Zh ? QStringLiteral("全局热键") : QStringLiteral("Global hotkey");
+}
+
+QString I18n::diagActivate() const {
+    return m_locale == Locale::Zh ? QStringLiteral("激活窗口") : QStringLiteral("Activate window");
+}
+
+QString I18n::diagCloseWindow() const {
+    return m_locale == Locale::Zh ? QStringLiteral("关闭窗口") : QStringLiteral("Close window");
+}
+
+QString I18n::diagIcon() const {
+    return m_locale == Locale::Zh ? QStringLiteral("窗口图标") : QStringLiteral("Window icon");
+}
+
+QString I18n::diagThumbnail() const {
+    return m_locale == Locale::Zh ? QStringLiteral("窗口缩略图") : QStringLiteral("Window thumbnail");
+}
+
+QString I18n::diagFolderPath() const {
+    return m_locale == Locale::Zh ? QStringLiteral("文件夹路径") : QStringLiteral("Folder path");
+}
+
+QString I18n::diagConfigPath() const {
+    return m_locale == Locale::Zh ? QStringLiteral("配置文件") : QStringLiteral("Config file");
+}
+
+QString I18n::diagLogPath() const {
+    return m_locale == Locale::Zh ? QStringLiteral("日志文件") : QStringLiteral("Log file");
+}
+
+QString I18n::diagOpenDataDir() const {
+    return m_locale == Locale::Zh ? QStringLiteral("打开数据目录") : QStringLiteral("Open data folder");
+}
+
+QString I18n::capabilityFull() const {
+    return m_locale == Locale::Zh ? QStringLiteral("支持") : QStringLiteral("Supported");
+}
+
+QString I18n::capabilityPartial() const {
+    return m_locale == Locale::Zh ? QStringLiteral("部分支持") : QStringLiteral("Partial");
+}
+
+QString I18n::capabilityNone() const {
+    return m_locale == Locale::Zh ? QStringLiteral("不支持") : QStringLiteral("Not supported");
+}
+
+QString I18n::importConfig() const {
+    return m_locale == Locale::Zh ? QStringLiteral("导入配置…") : QStringLiteral("Import config...");
+}
+
+QString I18n::exportConfig() const {
+    return m_locale == Locale::Zh ? QStringLiteral("导出配置…") : QStringLiteral("Export config...");
+}
+
+QString I18n::configFileFilter() const {
+    return m_locale == Locale::Zh ? QStringLiteral("JSON 配置文件 (*.json)")
+                                  : QStringLiteral("JSON config files (*.json)");
+}
+
+QString I18n::exportSucceeded(const QString &path) const {
+    return m_locale == Locale::Zh ? QStringLiteral("配置已导出到 %1").arg(path)
+                                  : QStringLiteral("Config exported to %1").arg(path);
+}
+
+QString I18n::exportFailed(const QString &err) const {
+    return m_locale == Locale::Zh ? QStringLiteral("导出失败：%1").arg(err)
+                                  : QStringLiteral("Export failed: %1").arg(err);
+}
+
+QString I18n::importSucceeded() const {
+    return m_locale == Locale::Zh ? QStringLiteral("配置已载入，点击保存后生效")
+                                  : QStringLiteral("Config loaded. Click Save to apply.");
+}
+
+QString I18n::importFailed(const QString &err) const {
+    return m_locale == Locale::Zh ? QStringLiteral("导入失败：%1").arg(err)
+                                  : QStringLiteral("Import failed: %1").arg(err);
 }

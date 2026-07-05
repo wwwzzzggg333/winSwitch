@@ -8,11 +8,15 @@ bool HotkeyManager::parseHotkey(const QString &hotkey, QString *errorMessage) {
     if (errorMessage) {
         *errorMessage = QStringLiteral("Global hotkeys on Linux require X11 session.");
     }
+    m_lastError = HotkeyError::PlatformUnsupported;
     return false;
 }
 
 void HotkeyManager::platformRegister(QString *errorMessage) {
-    Q_UNUSED(errorMessage)
+    if (errorMessage) {
+        *errorMessage = QStringLiteral("Global hotkeys on Linux require X11 session.");
+    }
+    m_lastError = HotkeyError::PlatformUnsupported;
     m_registered = false;
 }
 

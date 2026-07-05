@@ -8,6 +8,8 @@
 #include <QMainWindow>
 #include <QPixmap>
 
+class QScreen;
+
 class SwitcherPanel;
 class SettingsDialog;
 
@@ -55,6 +57,7 @@ protected:
 private:
     void centerOnScreen();
     QSize panelSize() const;
+    QScreen *targetScreen() const;
 
     Config m_config;
     I18n m_i18n;

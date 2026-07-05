@@ -6,7 +6,9 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonParseError>
 #include <QStandardPaths>
+#include <limits>
 
 namespace {
 
@@ -21,6 +23,24 @@ QString writableDataDir() {
     return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
 }
 
+void trimMruTimes(QHash<QString, qint64> *mruTimes) {
+    constexpr int kMaxMruEntries = 50;
+    while (mruTimes->size() > kMaxMruEntries) {
+        QString oldestKey;
+        qint64 oldestTime = std::numeric_limits<qint64>::max();
+        for (auto it = mruTimes->cbegin(); it != mruTimes->cend(); ++it) {
+            if (it.value() < oldestTime) {
+                oldestTime = it.value();
+                oldestKey = it.key();
+            }
+        }
+        if (oldestKey.isEmpty()) {
+            break;
+        }
+        mruTimes->remove(oldestKey);
+    }
+}
+
 QJsonObject toJson(const Config &cfg) {
     QJsonObject obj;
     obj.insert(QStringLiteral("hotkey"), cfg.hotkey);
@@ -28,6 +48,7 @@ QJsonObject toJson(const Config &cfg) {
     obj.insert(QStringLiteral("panel_width"), cfg.panelWidth);
     obj.insert(QStringLiteral("panel_height"), cfg.panelHeight);
     obj.insert(QStringLiteral("language"), cfg.language);
+    obj.insert(QStringLiteral("mru_enabled"), cfg.mruEnabled);
 
     QJsonArray pinned;
     for (const QString &p : cfg.pinned) {
@@ -40,6 +61,12 @@ QJsonObject toJson(const Config &cfg) {
         excluded.append(e);
     }
     obj.insert(QStringLiteral("excluded"), excluded);
+
+    QJsonObject mru;
+    for (auto it = cfg.mruTimes.cbegin(); it != cfg.mruTimes.cend(); ++it) {
+        mru.insert(it.key(), static_cast<double>(it.value()));
+    }
+    obj.insert(QStringLiteral("mru"), mru);
     return obj;
 }
 
@@ -50,6 +77,7 @@ Config fromJson(const QJsonObject &obj) {
     cfg.panelWidth = obj.value(QStringLiteral("panel_width")).toDouble(cfg.panelWidth);
     cfg.panelHeight = obj.value(QStringLiteral("panel_height")).toDouble(cfg.panelHeight);
     cfg.language = obj.value(QStringLiteral("language")).toString(cfg.language);
+    cfg.mruEnabled = obj.value(QStringLiteral("mru_enabled")).toBool(cfg.mruEnabled);
 
     cfg.pinned.clear();
     for (const QJsonValue &v : obj.value(QStringLiteral("pinned")).toArray()) {
@@ -70,6 +98,12 @@ Config fromJson(const QJsonObject &obj) {
                 cfg.excluded.append(s);
             }
         }
+    }
+
+    cfg.mruTimes.clear();
+    const QJsonObject mruObj = obj.value(QStringLiteral("mru")).toObject();
+    for (auto it = mruObj.begin(); it != mruObj.end(); ++it) {
+        cfg.mruTimes.insert(it.key().toLower(), static_cast<qint64>(it.value().toDouble()));
     }
     return cfg;
 }
@@ -112,12 +146,59 @@ Config Config::load() {
 }
 
 bool Config::save() const {
+    Config trimmed = *this;
+    trimMruTimes(&trimmed.mruTimes);
     QDir().mkpath(dataDir());
     QFile file(configPath());
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         return false;
     }
+    file.write(QJsonDocument(toJson(trimmed)).toJson(QJsonDocument::Indented));
+    return true;
+}
+
+bool Config::exportTo(const QString &path, QString *error) const {
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        if (error) {
+            *error = file.errorString();
+        }
+        return false;
+    }
     file.write(QJsonDocument(toJson(*this)).toJson(QJsonDocument::Indented));
+    return true;
+}
+
+bool Config::importFrom(const QString &path, Config *out, QString *error) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        if (error) {
+            *error = file.errorString();
+        }
+        return false;
+    }
+    QJsonParseError parseError{};
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError) {
+        if (error) {
+            *error = parseError.errorString();
+        }
+        return false;
+    }
+    if (!doc.isObject()) {
+        if (error) {
+            *error = QStringLiteral("Root is not a JSON object");
+        }
+        return false;
+    }
+    Config cfg = fromJson(doc.object());
+    if (cfg.hotkey.trimmed().isEmpty()) {
+        if (error) {
+            *error = QStringLiteral("Field 'hotkey' is empty");
+        }
+        return false;
+    }
+    *out = cfg;
     return true;
 }
 
@@ -128,5 +209,7 @@ bool Config::operator==(const Config &other) const {
         && panelHeight == other.panelHeight
         && language == other.language
         && pinned == other.pinned
-        && excluded == other.excluded;
+        && excluded == other.excluded
+        && mruEnabled == other.mruEnabled
+        && mruTimes == other.mruTimes;
 }

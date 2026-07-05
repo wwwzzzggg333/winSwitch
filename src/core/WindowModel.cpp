@@ -15,7 +15,9 @@ QString exeFileName(const QString &exePath) {
 QVector<AppGroup> buildGroups(
     const QList<RawWindow> &raws,
     const QStringList &pinned,
-    const QStringList &excluded) {
+    const QStringList &excluded,
+    const QHash<QString, qint64> &groupMru,
+    const QHash<qint64, qint64> &windowMru) {
     QStringList excludedLc;
     for (const QString &e : excluded) {
         excludedLc.append(e.toLower());
@@ -60,16 +62,24 @@ QVector<AppGroup> buildGroups(
                 const QString kb = b.folderPath.isEmpty() ? b.title : b.folderPath;
                 return ka.compare(kb, Qt::CaseInsensitive) < 0;
             });
+        } else if (!windowMru.isEmpty()) {
+            std::stable_sort(g.windows.begin(), g.windows.end(),
+                [&windowMru](const WindowItem &a, const WindowItem &b) {
+                    return windowMru.value(a.windowId, 0) > windowMru.value(b.windowId, 0);
+                });
         }
         groups.append(g);
     }
 
-    std::stable_sort(groups.begin(), groups.end(), [](const AppGroup &a, const AppGroup &b) {
-        if (a.pinned != b.pinned) {
-            return a.pinned > b.pinned;
-        }
-        return false;
-    });
+    std::stable_sort(groups.begin(), groups.end(),
+        [&groupMru](const AppGroup &a, const AppGroup &b) {
+            if (a.pinned != b.pinned) {
+                return a.pinned > b.pinned;
+            }
+            const qint64 ta = groupMru.value(exeFileName(a.exePath), 0);
+            const qint64 tb = groupMru.value(exeFileName(b.exePath), 0);
+            return ta > tb;
+        });
     return groups;
 }
 
@@ -82,30 +92,58 @@ AppState AppState::create(const QVector<AppGroup> &groups, const Filter &filter)
     return state;
 }
 
-QVector<const AppGroup *> AppState::visibleGroups() const {
-    QVector<const AppGroup *> out;
+QVector<AppGroup> AppState::visibleGroups() const {
+    QVector<AppGroup> out;
+    const QString needle = searchText.trimmed();
     for (const AppGroup &g : groups) {
-        if (filter.kind == FilterKind::All) {
-            out.append(&g);
-        } else if (filter.exePath == g.exePath) {
-            out.append(&g);
+        if (filter.kind == FilterKind::OnlyApp && filter.exePath != g.exePath) {
+            continue;
+        }
+        if (needle.isEmpty()) {
+            out.append(g);
+            continue;
+        }
+        if (g.appName.contains(needle, Qt::CaseInsensitive)) {
+            out.append(g);
+            continue;
+        }
+        AppGroup filtered = g;
+        filtered.windows.clear();
+        for (const WindowItem &w : g.windows) {
+            if (w.title.contains(needle, Qt::CaseInsensitive)
+                || w.folderPath.contains(needle, Qt::CaseInsensitive)) {
+                filtered.windows.append(w);
+            }
+        }
+        if (!filtered.windows.isEmpty()) {
+            out.append(filtered);
         }
     }
     return out;
 }
 
+void AppState::setSearchText(const QString &text) {
+    if (searchText == text) {
+        return;
+    }
+    searchText = text;
+    selectedGroup = 0;
+    selectedWindow = 0;
+    clampSelection();
+}
+
 qint64 AppState::selectedWindowId() const {
-    const QVector<const AppGroup *> vis = visibleGroups();
+    const QVector<AppGroup> vis = visibleGroups();
     if (vis.isEmpty()) {
         return 0;
     }
     const int gi = qBound(0, selectedGroup, vis.size() - 1);
-    const AppGroup *g = vis.at(gi);
-    if (g->windows.isEmpty()) {
+    const AppGroup &g = vis.at(gi);
+    if (g.windows.isEmpty()) {
         return 0;
     }
-    const int wi = qBound(0, selectedWindow, g->windows.size() - 1);
-    return g->windows.at(wi).windowId;
+    const int wi = qBound(0, selectedWindow, g.windows.size() - 1);
+    return g.windows.at(wi).windowId;
 }
 
 void AppState::removeWindow(qint64 windowId) {
@@ -152,19 +190,19 @@ void AppState::setPinned(const QStringList &pinned) {
 }
 
 void AppState::clampSelection() {
-    const QVector<const AppGroup *> vis = visibleGroups();
+    const QVector<AppGroup> vis = visibleGroups();
     if (vis.isEmpty()) {
         selectedGroup = 0;
         selectedWindow = 0;
         return;
     }
     selectedGroup = qBound(0, selectedGroup, vis.size() - 1);
-    const int wlen = vis.at(selectedGroup)->windows.size();
+    const int wlen = vis.at(selectedGroup).windows.size();
     selectedWindow = wlen == 0 ? 0 : qBound(0, selectedWindow, wlen - 1);
 }
 
 void AppState::moveSelection(int dy, int dx) {
-    const QVector<const AppGroup *> vis = visibleGroups();
+    const QVector<AppGroup> vis = visibleGroups();
     if (vis.isEmpty()) {
         return;
     }
@@ -172,13 +210,13 @@ void AppState::moveSelection(int dy, int dx) {
     int wi = selectedWindow;
 
     if (dx != 0) {
-        const int len = vis.at(gi)->windows.size();
+        const int len = vis.at(gi).windows.size();
         if (len > 0) {
             wi = ((wi + dx) % len + len) % len;
         }
     }
     if (dy > 0) {
-        if (wi + 1 < vis.at(gi)->windows.size()) {
+        if (wi + 1 < vis.at(gi).windows.size()) {
             wi += 1;
         } else if (gi + 1 < vis.size()) {
             gi += 1;
@@ -189,7 +227,7 @@ void AppState::moveSelection(int dy, int dx) {
             wi -= 1;
         } else if (gi > 0) {
             gi -= 1;
-            wi = qMax(0, vis.at(gi)->windows.size() - 1);
+            wi = qMax(0, vis.at(gi).windows.size() - 1);
         }
     }
     selectedGroup = gi;
