@@ -262,20 +262,20 @@ PlatformCapabilities queryPlatformCapabilitiesImpl() {
     caps.platformName = QStringLiteral("Linux");
     if (isWaylandSession()) {
         caps.sessionType = QStringLiteral("Wayland");
-        caps.hotkey = CapabilityLevel::None;
-        caps.activate = CapabilityLevel::None;
-        caps.closeWindow = CapabilityLevel::None;
-        caps.icon = CapabilityLevel::None;
-        caps.thumbnail = CapabilityLevel::None;
-        caps.folderPath = CapabilityLevel::None;
+        caps.hotkey = CapabilityLevel::Unavailable;
+        caps.activate = CapabilityLevel::Unavailable;
+        caps.closeWindow = CapabilityLevel::Unavailable;
+        caps.icon = CapabilityLevel::Unavailable;
+        caps.thumbnail = CapabilityLevel::Unavailable;
+        caps.folderPath = CapabilityLevel::Unavailable;
     } else {
         caps.sessionType = QStringLiteral("X11");
-        caps.hotkey = CapabilityLevel::None;
+        caps.hotkey = CapabilityLevel::Unavailable;
         caps.activate = CapabilityLevel::Full;
         caps.closeWindow = CapabilityLevel::Full;
-        caps.icon = CapabilityLevel::None;
+        caps.icon = CapabilityLevel::Unavailable;
         caps.thumbnail = CapabilityLevel::Partial;
-        caps.folderPath = CapabilityLevel::None;
+        caps.folderPath = CapabilityLevel::Unavailable;
     }
     return caps;
 }

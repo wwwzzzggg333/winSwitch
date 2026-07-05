@@ -27,7 +27,7 @@ QString capabilityText(CapabilityLevel level, const I18n &i18n) {
         return QStringLiteral("✓ ") + i18n.capabilityFull();
     case CapabilityLevel::Partial:
         return QStringLiteral("△ ") + i18n.capabilityPartial();
-    case CapabilityLevel::None:
+    case CapabilityLevel::Unavailable:
         return QStringLiteral("✗ ") + i18n.capabilityNone();
     }
     return {};

@@ -9,6 +9,7 @@
 #include <QWidget>
 
 class QLineEdit;
+class QVBoxLayout;
 
 class SwitcherPanel : public QWidget {
     Q_OBJECT
@@ -41,4 +42,5 @@ private:
     bool m_showThumbnails = true;
     QLineEdit *m_searchEdit = nullptr;
     QWidget *m_dynamicHost = nullptr;
+    QVBoxLayout *m_dynamicLayout = nullptr;
 };

@@ -28,9 +28,9 @@ SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i1
     root->addWidget(m_searchEdit);
 
     m_dynamicHost = new QWidget;
-    auto *dynamicLayout = new QVBoxLayout(m_dynamicHost);
-    dynamicLayout->setContentsMargins(0, 0, 0, 0);
-    dynamicLayout->setSpacing(8);
+    m_dynamicLayout = new QVBoxLayout(m_dynamicHost);
+    m_dynamicLayout->setContentsMargins(0, 0, 0, 0);
+    m_dynamicLayout->setSpacing(8);
     root->addWidget(m_dynamicHost, 1);
 }
 
@@ -57,12 +57,11 @@ void SwitcherPanel::updateTextures(const QHash<qint64, QPixmap> &icons, const QH
 }
 
 void SwitcherPanel::rebuild() {
-    QLayout *hostLayout = m_dynamicHost->layout();
-    if (!hostLayout) {
+    if (!m_dynamicLayout) {
         return;
     }
     QLayoutItem *child = nullptr;
-    while ((child = hostLayout->takeAt(0)) != nullptr) {
+    while ((child = m_dynamicLayout->takeAt(0)) != nullptr) {
         delete child->widget();
         delete child;
     }
@@ -121,7 +120,7 @@ void SwitcherPanel::rebuild() {
     }
     filterLayout->addStretch();
     filterScroll->setWidget(filterRow);
-    hostLayout->addWidget(filterScroll);
+    m_dynamicLayout->addWidget(filterScroll);
 
     auto *contentScroll = new QScrollArea;
     contentScroll->setWidgetResizable(true);
@@ -191,7 +190,7 @@ void SwitcherPanel::rebuild() {
     }
     contentLayout->addStretch();
     contentScroll->setWidget(content);
-    hostLayout->addWidget(contentScroll, 1);
+    m_dynamicLayout->addWidget(contentScroll, 1);
 }
 
 bool SwitcherPanel::eventFilter(QObject *obj, QEvent *event) {

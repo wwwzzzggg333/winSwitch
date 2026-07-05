@@ -196,12 +196,12 @@ PlatformCapabilities queryPlatformCapabilitiesImpl() {
     PlatformCapabilities caps;
     caps.platformName = QStringLiteral("macOS");
     caps.sessionType = QStringLiteral("Desktop");
-    caps.hotkey = CapabilityLevel::None;
+    caps.hotkey = CapabilityLevel::Unavailable;
     caps.activate = CapabilityLevel::Partial;
-    caps.closeWindow = CapabilityLevel::None;
-    caps.icon = CapabilityLevel::None;
+    caps.closeWindow = CapabilityLevel::Unavailable;
+    caps.icon = CapabilityLevel::Unavailable;
 #if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
-    caps.thumbnail = CapabilityLevel::None;
+    caps.thumbnail = CapabilityLevel::Unavailable;
 #else
     caps.thumbnail = CapabilityLevel::Partial;
 #endif
