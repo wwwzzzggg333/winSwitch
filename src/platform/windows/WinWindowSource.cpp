@@ -1,7 +1,6 @@
 #include "platform/IWindowSource.h"
 #include "platform/PlatformCapabilities.h"
 #include "platform/windows/WinExplorerPaths.h"
-#include "core/AppLog.h"
 
 #include <windows.h>
 #include <dwmapi.h>
@@ -185,9 +184,6 @@ public:
         if (!IsWindow(hwnd)) {
             return {};
         }
-#if defined(_MSC_VER)
-        __try {
-#endif
         DWORD_PTR iconResult = 0;
         SendMessageTimeoutW(
             hwnd,
@@ -251,12 +247,6 @@ public:
             std::swap(image.pixels[i], image.pixels[i + 2]);
         }
         return image;
-#if defined(_MSC_VER)
-        } __except (EXCEPTION_EXECUTE_HANDLER) {
-            AppLog::warn(QStringLiteral("SEH in windowIcon, hwnd=%1").arg(windowId));
-            return {};
-        }
-#endif
     }
 };
 
@@ -270,10 +260,6 @@ public:
         if (IsIconic(hwnd)) {
             return {};
         }
-#if defined(_MSC_VER)
-        __try {
-#endif
-
         RECT windowRect{};
         if (!GetWindowRect(hwnd, &windowRect)) {
             return {};
@@ -351,12 +337,6 @@ public:
             reinterpret_cast<const char *>(cropped.constBits()),
             cropped.sizeInBytes());
         return downscale(croppedImage);
-#if defined(_MSC_VER)
-        } __except (EXCEPTION_EXECUTE_HANDLER) {
-            AppLog::warn(QStringLiteral("SEH in thumbnail capture, hwnd=%1").arg(windowId));
-            return {};
-        }
-#endif
     }
 
 private:
