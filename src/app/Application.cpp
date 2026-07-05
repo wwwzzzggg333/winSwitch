@@ -236,11 +236,17 @@ void ApplicationController::loadTexturesBatch() {
         }
     }
     m_texturesLoading = !m_pendingIcons.isEmpty() || !m_pendingThumbs.isEmpty();
+    AppLog::info(QStringLiteral("updateTextures: icons=%1 thumbs=%2 pending=%3/%4")
+                     .arg(m_icons.size())
+                     .arg(m_thumbs.size())
+                     .arg(m_pendingIcons.size())
+                     .arg(m_pendingThumbs.size()));
     if (m_texturesLoading) {
         m_mainWindow->updateTextures(m_icons, m_thumbs);
         QTimer::singleShot(0, this, &ApplicationController::loadTexturesBatch);
     } else {
         m_mainWindow->updateTextures(m_icons, m_thumbs);
+        AppLog::info(QStringLiteral("loadTexturesBatch: complete"));
     }
 }
 

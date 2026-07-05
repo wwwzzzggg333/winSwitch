@@ -10,6 +10,7 @@
 #include <QImage>
 #include <QSet>
 #include <algorithm>
+#include <cstring>
 
 #ifndef PROCESS_NAME_WIN32
 #define PROCESS_NAME_WIN32 0x00000001
@@ -123,6 +124,111 @@ BOOL CALLBACK enumProc(HWND hwnd, LPARAM lparam) {
     return TRUE;
 }
 
+ImageRgba imageFromQImage(QImage image) {
+    if (image.isNull()) {
+        return {};
+    }
+    image = image.convertToFormat(QImage::Format_RGBA8888);
+    if (image.isNull()) {
+        return {};
+    }
+    ImageRgba out;
+    out.width = image.width();
+    out.height = image.height();
+    const int tightBytes = out.width * 4;
+    const int bytesPerLine = image.bytesPerLine();
+    out.pixels.resize(out.width * out.height * 4);
+    if (bytesPerLine == tightBytes) {
+        memcpy(out.pixels.data(), image.constBits(), static_cast<size_t>(out.pixels.size()));
+    } else {
+        for (int y = 0; y < out.height; ++y) {
+            memcpy(out.pixels.data() + y * tightBytes, image.constScanLine(y), static_cast<size_t>(tightBytes));
+        }
+    }
+    return out;
+}
+
+ImageRgba captureHicon(HICON hicon, bool destroyIcon) {
+    if (!hicon) {
+        return {};
+    }
+    constexpr int kIconDrawSize = 256;
+    HDC screenDc = GetDC(nullptr);
+    if (!screenDc) {
+        if (destroyIcon) {
+            DestroyIcon(hicon);
+        }
+        return {};
+    }
+    HDC memDc = CreateCompatibleDC(screenDc);
+    if (!memDc) {
+        ReleaseDC(nullptr, screenDc);
+        if (destroyIcon) {
+            DestroyIcon(hicon);
+        }
+        return {};
+    }
+    HBITMAP bmp = CreateCompatibleBitmap(screenDc, kIconDrawSize, kIconDrawSize);
+    if (!bmp) {
+        DeleteDC(memDc);
+        ReleaseDC(nullptr, screenDc);
+        if (destroyIcon) {
+            DestroyIcon(hicon);
+        }
+        return {};
+    }
+    HGDIOBJ old = SelectObject(memDc, bmp);
+    if (!old) {
+        DeleteObject(bmp);
+        DeleteDC(memDc);
+        ReleaseDC(nullptr, screenDc);
+        if (destroyIcon) {
+            DestroyIcon(hicon);
+        }
+        return {};
+    }
+
+    const HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+    RECT fillRect{0, 0, kIconDrawSize, kIconDrawSize};
+    FillRect(memDc, &fillRect, brush);
+    DeleteObject(brush);
+
+    const BOOL drawn = DrawIconEx(
+        memDc, 0, 0, hicon, kIconDrawSize, kIconDrawSize, 0, nullptr, DI_NORMAL);
+
+    ImageRgba image;
+    if (drawn) {
+        BITMAPINFO bi{};
+        bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bi.bmiHeader.biWidth = kIconDrawSize;
+        bi.bmiHeader.biHeight = -kIconDrawSize;
+        bi.bmiHeader.biPlanes = 1;
+        bi.bmiHeader.biBitCount = 32;
+        bi.bmiHeader.biCompression = BI_RGB;
+        image.width = kIconDrawSize;
+        image.height = kIconDrawSize;
+        image.pixels.resize(kIconDrawSize * kIconDrawSize * 4);
+        const int got = GetDIBits(
+            memDc, bmp, 0, kIconDrawSize, image.pixels.data(), &bi, DIB_RGB_COLORS);
+        if (got == 0) {
+            image = {};
+        } else {
+            for (int i = 0; i < image.pixels.size(); i += 4) {
+                std::swap(image.pixels[i], image.pixels[i + 2]);
+            }
+        }
+    }
+
+    SelectObject(memDc, old);
+    DeleteObject(bmp);
+    DeleteDC(memDc);
+    ReleaseDC(nullptr, screenDc);
+    if (destroyIcon) {
+        DestroyIcon(hicon);
+    }
+    return image;
+}
+
 class WinWindowSource final : public IWindowSource {
 public:
     QList<RawWindow> listWindows() override {
@@ -194,59 +300,15 @@ public:
             80,
             &iconResult);
         HICON hicon = reinterpret_cast<HICON>(iconResult);
+        bool destroyIcon = hicon != nullptr;
         if (!hicon) {
             hicon = reinterpret_cast<HICON>(GetClassLongPtrW(hwnd, GCLP_HICON));
+            destroyIcon = false;
         }
         if (!hicon) {
             return {};
         }
-        ICONINFO info{};
-        if (!GetIconInfo(hicon, &info)) {
-            return {};
-        }
-        BITMAP bmp{};
-        if (GetObjectW(info.hbmColor, sizeof(bmp), &bmp) == 0) {
-            DeleteObject(info.hbmColor);
-            DeleteObject(info.hbmMask);
-            return {};
-        }
-        const int w = bmp.bmWidth;
-        const int h = bmp.bmHeight;
-        if (w <= 0 || h <= 0) {
-            DeleteObject(info.hbmColor);
-            DeleteObject(info.hbmMask);
-            return {};
-        }
-        BITMAPINFO bi{};
-        bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bi.bmiHeader.biWidth = w;
-        bi.bmiHeader.biHeight = -h;
-        bi.bmiHeader.biPlanes = 1;
-        bi.bmiHeader.biBitCount = 32;
-        bi.bmiHeader.biCompression = BI_RGB;
-        ImageRgba image;
-        image.width = w;
-        image.height = h;
-        image.pixels.resize(w * h * 4);
-        HDC dc = CreateCompatibleDC(nullptr);
-        if (!dc) {
-            DeleteObject(info.hbmColor);
-            DeleteObject(info.hbmMask);
-            return {};
-        }
-        if (GetDIBits(dc, info.hbmColor, 0, h, image.pixels.data(), &bi, DIB_RGB_COLORS) == 0) {
-            DeleteDC(dc);
-            DeleteObject(info.hbmColor);
-            DeleteObject(info.hbmMask);
-            return {};
-        }
-        DeleteDC(dc);
-        DeleteObject(info.hbmColor);
-        DeleteObject(info.hbmMask);
-        for (int i = 0; i < image.pixels.size(); i += 4) {
-            std::swap(image.pixels[i], image.pixels[i + 2]);
-        }
-        return image;
+        return captureHicon(hicon, destroyIcon);
     }
 };
 
@@ -330,13 +392,7 @@ public:
             fullH,
             QImage::Format_RGBA8888);
         QImage cropped = src.copy(cropX, cropY, cropW, cropH);
-        ImageRgba croppedImage;
-        croppedImage.width = cropped.width();
-        croppedImage.height = cropped.height();
-        croppedImage.pixels = QByteArray(
-            reinterpret_cast<const char *>(cropped.constBits()),
-            cropped.sizeInBytes());
-        return downscale(croppedImage);
+        return downscale(imageFromQImage(cropped));
     }
 
 private:
@@ -431,13 +487,11 @@ private:
             reinterpret_cast<const uchar *>(thumb.pixels.constData()),
             thumb.width,
             thumb.height,
+            thumb.width * 4,
             QImage::Format_RGBA8888);
-        QImage scaled = src.scaled(newW, newH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        ImageRgba out;
-        out.width = newW;
-        out.height = newH;
-        out.pixels = QByteArray(reinterpret_cast<const char *>(scaled.constBits()), scaled.sizeInBytes());
-        if (isBlank(out.pixels) || looksTruncated(out)) {
+        QImage scaled = src.copy().scaled(newW, newH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        ImageRgba out = imageFromQImage(scaled);
+        if (out.pixels.isEmpty() || isBlank(out.pixels) || looksTruncated(out)) {
             return {};
         }
         return out;
