@@ -7,17 +7,6 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
-    inputs:
-      platform:
-        description: Platform to build
-        required: true
-        default: all
-        type: choice
-        options:
-          - all
-          - windows
-          - linux
-          - macos
 
 permissions:
   contents: read
@@ -27,25 +16,8 @@ env:
 
 jobs:
   build:
-    name: Build (${{ matrix.package }})
-    runs-on: ${{ matrix.os }}
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.platform == 'all' ||
-      github.event.inputs.platform == matrix.platform_id
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            package: mySwitcher-linux-x64
-            platform_id: linux
-          - os: windows-latest
-            package: mySwitcher-windows-x64
-            platform_id: windows
-          - os: macos-14
-            package: mySwitcher-macos-arm64
-            platform_id: macos
+    name: Build (mySwitcher-windows-x64)
+    runs-on: windows-latest
 
     steps:
       - name: Checkout
@@ -57,23 +29,16 @@ jobs:
           version: ${{ env.QT_VERSION }}
           cache: true
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libx11-dev
-
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: Package (Windows)
-        if: runner.os == 'Windows'
+      - name: Package
         shell: pwsh
         run: |
-          $packageName = "${{ matrix.package }}"
+          $packageName = "mySwitcher-windows-x64"
           $outDir = "packages/$packageName"
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
@@ -90,65 +55,11 @@ jobs:
           Copy-Item README.md $outDir/
           Compress-Archive -Path $outDir -DestinationPath "packages/$packageName.zip"
 
-      - name: Package (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          package_name="${{ matrix.package }}"
-          app_path="build/mySwitcher.app"
-          if [ ! -d "$app_path" ]; then
-            echo "Expected app bundle at $app_path"
-            ls -la build
-            exit 1
-          fi
-          macdeployqt "$app_path" -always-overwrite
-          mkdir -p packages
-          ditto -c -k --keepParent "$app_path" "packages/${package_name}.zip"
-
-      - name: Package (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          set -euo pipefail
-          package_name="${{ matrix.package }}"
-          out_dir="packages/${package_name}"
-          mkdir -p "${out_dir}/lib" "${out_dir}/plugins/platforms"
-
-          cp build/mySwitcher "${out_dir}/"
-          cp README.md "${out_dir}/"
-
-          # Bundle non-system shared libraries required by the binary.
-          while IFS= read -r lib; do
-            case "$lib" in
-              /lib/*|/lib64/*|/usr/lib/*|/usr/lib64/*) ;;
-              *)
-                if [ -n "$lib" ] && [ -f "$lib" ]; then
-                  cp -L "$lib" "${out_dir}/lib/"
-                fi
-                ;;
-            esac
-          done < <(ldd build/mySwitcher | awk '/=>/ {print $3}')
-
-          if [ -n "${QT_ROOT_DIR:-}" ] && [ -f "${QT_ROOT_DIR}/plugins/platforms/libqxcb.so" ]; then
-            cp "${QT_ROOT_DIR}/plugins/platforms/libqxcb.so" "${out_dir}/plugins/platforms/"
-          fi
-
-          printf '%s\n' \
-            '#!/usr/bin/env bash' \
-            'set -euo pipefail' \
-            'dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"' \
-            'export LD_LIBRARY_PATH="${dir}/lib:${LD_LIBRARY_PATH:-}"' \
-            'export QT_QPA_PLATFORM_PLUGIN_PATH="${dir}/plugins"' \
-            'exec "${dir}/mySwitcher" "$@"' \
-            > "${out_dir}/run.sh"
-          chmod +x "${out_dir}/run.sh" "${out_dir}/mySwitcher"
-
-          mkdir -p packages
-          (cd packages && zip -r "${package_name}.zip" "${package_name}")
-
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: package-${{ matrix.package }}
-          path: packages/${{ matrix.package }}.zip
+          name: package-mySwitcher-windows-x64
+          path: packages/mySwitcher-windows-x64.zip
           if-no-files-found: error
 
   release:
