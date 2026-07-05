@@ -1,6 +1,8 @@
 #include "app/Application.h"
 #include "app/HotkeyManager.h"
 
+#include "core/AppLog.h"
+
 #include "ui/AppMessageBox.h"
 
 #include <QApplication>
@@ -99,10 +101,12 @@ void ApplicationController::onQuit() {
 }
 
 void ApplicationController::showPanel() {
+    AppLog::info(QStringLiteral("showPanel: refresh windows"));
     refreshWindows();
     m_view = View::Panel;
+    AppLog::info(QStringLiteral("showPanel: displaying %1 groups").arg(m_state.groups.size()));
     m_mainWindow->showPanel(m_state, m_icons, m_thumbs, m_config.thumbnail);
-    loadTexturesBatch();
+    QTimer::singleShot(0, this, &ApplicationController::loadTexturesBatch);
 }
 
 void ApplicationController::showSettings() {
@@ -111,6 +115,7 @@ void ApplicationController::showSettings() {
 }
 
 void ApplicationController::hideAll() {
+    AppLog::info(QStringLiteral("hideAll"));
     m_view = View::Hidden;
     m_mainWindow->hide();
 }
@@ -202,6 +207,9 @@ void ApplicationController::loadTexturesBatch() {
     if (!m_texturesLoading) {
         return;
     }
+    AppLog::info(QStringLiteral("loadTexturesBatch: icons=%1 thumbs=%2")
+                     .arg(m_pendingIcons.size())
+                     .arg(m_pendingThumbs.size()));
     constexpr int batch = 4;
     for (int i = 0; i < batch && !m_pendingIcons.isEmpty(); ++i) {
         const qint64 id = m_pendingIcons.takeFirst();

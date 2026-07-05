@@ -181,6 +181,9 @@ class WinIconCapture final : public IIconCapture {
 public:
     ImageRgba windowIcon(qint64 windowId) override {
         HWND hwnd = reinterpret_cast<HWND>(windowId);
+        if (!IsWindow(hwnd)) {
+            return {};
+        }
         HICON hicon = reinterpret_cast<HICON>(SendMessageW(hwnd, WM_GETICON, ICON_BIG, 0));
         if (!hicon) {
             hicon = reinterpret_cast<HICON>(GetClassLongPtrW(hwnd, GCLP_HICON));
@@ -232,6 +235,9 @@ class WinThumbnailCapture final : public IThumbnailCapture {
 public:
     ImageRgba capture(qint64 windowId) override {
         HWND hwnd = reinterpret_cast<HWND>(windowId);
+        if (!IsWindow(hwnd) || !IsWindowVisible(hwnd)) {
+            return {};
+        }
         if (IsIconic(hwnd)) {
             return {};
         }

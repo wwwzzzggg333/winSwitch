@@ -13,6 +13,7 @@ set(CORE_SOURCES
     src/core/Config.cpp
     src/core/WindowModel.cpp
     src/core/I18n.cpp
+    src/core/AppLog.cpp
 )
 
 set(APP_SOURCES

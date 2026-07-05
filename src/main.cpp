@@ -3,6 +3,8 @@
 #include "core/Config.h"
 #include "core/I18n.h"
 
+#include "core/AppLog.h"
+
 #include "ui/AppMessageBox.h"
 
 #include <QApplication>
@@ -23,6 +25,8 @@ int main(int argc, char *argv[]) {
     QApplication::setQuitOnLastWindowClosed(false);
     app.setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_ComputerIcon));
     loadStyleSheet(app);
+    AppLog::init();
+    AppLog::info(QStringLiteral("ApplicationController initializing"));
 
     SingleInstance instance(QStringLiteral("mySwitcher_singleton"));
     if (instance.isAnotherRunning()) {
