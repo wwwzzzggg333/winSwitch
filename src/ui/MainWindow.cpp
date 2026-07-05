@@ -47,6 +47,10 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
         if (state != Qt::ApplicationInactive || !isPanelVisible()) {
             return;
         }
+        constexpr int kActivationGuardMs = 500;
+        if (m_activationTimer.isValid() && m_activationTimer.elapsed() < kActivationGuardMs) {
+            return;
+        }
         QTimer::singleShot(120, this, [this]() {
             if (!isPanelVisible()) {
                 return;
@@ -105,6 +109,7 @@ void MainWindow::showPanel(
     show();
     raise();
     activateWindow();
+    m_activationTimer.start();
     QTimer::singleShot(0, m_panel, [panel = m_panel]() { panel->focusSearch(); });
     AppLog::info(QStringLiteral("panel shown, groups=%1").arg(state.groups.size()));
 }

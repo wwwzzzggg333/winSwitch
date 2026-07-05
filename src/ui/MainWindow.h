@@ -7,6 +7,7 @@
 #include <QHash>
 #include <QMainWindow>
 #include <QPixmap>
+#include <QElapsedTimer>
 
 class QScreen;
 
@@ -67,4 +68,5 @@ private:
     SettingsDialog *m_settings = nullptr;
     PanelAction m_lastAction;
     bool m_quitting = false;
+    QElapsedTimer m_activationTimer;
 };

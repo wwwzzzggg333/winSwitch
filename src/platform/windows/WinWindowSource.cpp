@@ -198,6 +198,9 @@ ImageRgba captureHicon(HICON hicon, bool destroyIcon) {
 
     ImageRgba image;
     if (drawn) {
+        image.width = kIconDrawSize;
+        image.height = kIconDrawSize;
+        image.pixels.resize(kIconDrawSize * kIconDrawSize * 4);
         BITMAPINFO bi{};
         bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
         bi.bmiHeader.biWidth = kIconDrawSize;
@@ -205,11 +208,13 @@ ImageRgba captureHicon(HICON hicon, bool destroyIcon) {
         bi.bmiHeader.biPlanes = 1;
         bi.bmiHeader.biBitCount = 32;
         bi.bmiHeader.biCompression = BI_RGB;
-        image.width = kIconDrawSize;
-        image.height = kIconDrawSize;
-        image.pixels.resize(kIconDrawSize * kIconDrawSize * 4);
-        const int got = GetDIBits(
-            memDc, bmp, 0, kIconDrawSize, image.pixels.data(), &bi, DIB_RGB_COLORS);
+        int got = 0;
+        __try {
+            got = GetDIBits(
+                memDc, bmp, 0, kIconDrawSize, image.pixels.data(), &bi, DIB_RGB_COLORS);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            got = 0;
+        }
         if (got == 0) {
             image = {};
         } else {
@@ -369,7 +374,12 @@ public:
         image.width = fullW;
         image.height = fullH;
         image.pixels.resize(fullW * fullH * 4);
-        const int got = GetDIBits(memDc, bmp, 0, fullH, image.pixels.data(), &bi, DIB_RGB_COLORS);
+        int got = 0;
+        __try {
+            got = GetDIBits(memDc, bmp, 0, fullH, image.pixels.data(), &bi, DIB_RGB_COLORS);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            got = 0;
+        }
         SelectObject(memDc, old);
         DeleteObject(bmp);
         DeleteDC(memDc);
