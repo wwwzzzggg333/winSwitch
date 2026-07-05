@@ -77,7 +77,12 @@ void SwitcherPanel::setData(
     m_searchEdit->clear();
     m_searchEdit->blockSignals(false);
     rebuild();
-    m_searchEdit->setFocus();
+}
+
+void SwitcherPanel::focusSearch() {
+    if (m_searchEdit) {
+        m_searchEdit->setFocus(Qt::ShortcutFocusReason);
+    }
 }
 
 void SwitcherPanel::updateTextures(const QHash<qint64, QPixmap> &icons, const QHash<qint64, QPixmap> &thumbs) {

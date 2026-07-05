@@ -100,10 +100,11 @@ QString locationUrlToFolderPath(const QString &url) {
 
 QHash<qint64, QString> explorerPaths() {
     QHash<qint64, QString> map;
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    const HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    const bool comInitializedHere = (hr == S_OK);
     IShellWindows *shellWindows = nullptr;
     if (FAILED(CoCreateInstance(CLSID_ShellWindows, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&shellWindows)))) {
-        if (SUCCEEDED(hr)) {
+        if (comInitializedHere) {
             CoUninitialize();
         }
         return map;
@@ -140,7 +141,7 @@ QHash<qint64, QString> explorerPaths() {
         }
     }
     shellWindows->Release();
-    if (SUCCEEDED(hr)) {
+    if (comInitializedHere) {
         CoUninitialize();
     }
     return map;

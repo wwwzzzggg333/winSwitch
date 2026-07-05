@@ -68,4 +68,5 @@ private:
     SettingsDialog *m_settings = nullptr;
     PanelAction m_lastAction;
     bool m_quitting = false;
+    qint64 m_suppressFocusLossUntil = 0;
 };

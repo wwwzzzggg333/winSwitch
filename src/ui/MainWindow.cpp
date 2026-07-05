@@ -5,7 +5,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QColor>
-#include <QCursor>
+#include <QDateTime>
 #include <QEvent>
 #include <QFocusEvent>
 #include <QGuiApplication>
@@ -53,15 +53,15 @@ void MainWindow::scheduleFocusLostCheck() {
         if (!isPanelVisible()) {
             return;
         }
+        if (QDateTime::currentMSecsSinceEpoch() < m_suppressFocusLossUntil) {
+            return;
+        }
         QWidget *active = QApplication::activeWindow();
         if (active == this || (active && isAncestorOf(active))) {
             return;
         }
         QWidget *focus = QApplication::focusWidget();
         if (focus && (focus == this || isAncestorOf(focus))) {
-            return;
-        }
-        if (frameGeometry().contains(QCursor::pos())) {
             return;
         }
         emit focusLost();
@@ -100,6 +100,7 @@ void MainWindow::showPanel(
     const QHash<qint64, QPixmap> &icons,
     const QHash<qint64, QPixmap> &thumbs,
     bool showThumbnails) {
+    m_suppressFocusLossUntil = QDateTime::currentMSecsSinceEpoch() + 400;
     setMaximumSize(panelSize());
     resize(panelSize());
     centerOnScreen();
@@ -108,6 +109,7 @@ void MainWindow::showPanel(
     show();
     raise();
     activateWindow();
+    QTimer::singleShot(0, m_panel, [panel = m_panel]() { panel->focusSearch(); });
 }
 
 void MainWindow::showSettings(Config config) {
@@ -126,7 +128,8 @@ void MainWindow::updateTextures(const QHash<qint64, QPixmap> &icons, const QHash
 }
 
 void MainWindow::changeEvent(QEvent *event) {
-    if (event->type() == QEvent::ActivationChange && isPanelVisible() && !isActiveWindow()) {
+    if (event->type() == QEvent::ActivationChange && isPanelVisible() && !isActiveWindow()
+        && QDateTime::currentMSecsSinceEpoch() >= m_suppressFocusLossUntil) {
         scheduleFocusLostCheck();
     }
     QMainWindow::changeEvent(event);
@@ -143,14 +146,20 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 void MainWindow::focusOutEvent(QFocusEvent *event) {
     QMainWindow::focusOutEvent(event);
-    if (isPanelVisible()) {
-        scheduleFocusLostCheck();
+    if (!isPanelVisible() || QDateTime::currentMSecsSinceEpoch() < m_suppressFocusLossUntil) {
+        return;
     }
+    if (event->reason() == Qt::ActiveWindowFocusReason) {
+        return;
+    }
+    scheduleFocusLostCheck();
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
-    if (isPanelVisible()) {
-        if (event->type() == QEvent::MouseButtonPress) {
+    if (!isPanelVisible() || QDateTime::currentMSecsSinceEpoch() < m_suppressFocusLossUntil) {
+        return QMainWindow::eventFilter(obj, event);
+    }
+    if (event->type() == QEvent::MouseButtonPress) {
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
             const QPoint global = mouseEvent->globalPosition().toPoint();
             if (!frameGeometry().contains(global)) {
@@ -162,6 +171,5 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
         } else if (event->type() == QEvent::WindowDeactivate && obj == this) {
             scheduleFocusLostCheck();
         }
-    }
     return QMainWindow::eventFilter(obj, event);
 }

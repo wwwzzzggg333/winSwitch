@@ -25,6 +25,7 @@ public:
         const QHash<qint64, QPixmap> &thumbs,
         bool showThumbnails);
     void updateTextures(const QHash<qint64, QPixmap> &icons, const QHash<qint64, QPixmap> &thumbs);
+    void focusSearch();
 
 signals:
     void actionTriggered(MainWindow::PanelAction action);
