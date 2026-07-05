@@ -66,7 +66,7 @@ bool ApplicationController::initialize() {
     if (!Config::welcomeShown()) {
         Config::markWelcomeShown();
         QMessageBox::information(
-            m_mainWindow,
+            nullptr,
             m_i18n.appTitle(),
             m_i18n.welcomeMessage(m_config.hotkey, Config::logPath()));
     }

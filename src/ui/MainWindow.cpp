@@ -4,17 +4,26 @@
 
 #include <QApplication>
 #include <QCloseEvent>
+#include <QColor>
 #include <QCursor>
 #include <QEvent>
 #include <QFocusEvent>
 #include <QGuiApplication>
+#include <QPalette>
 #include <QScreen>
 
 MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     : QMainWindow(parent), m_config(config), m_i18n(i18n) {
     setWindowTitle(m_i18n.appTitle());
-    setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
+    setWindowFlags(
+        Qt::Window | Qt::WindowStaysOnTopHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint
+        | Qt::WindowMinimizeButtonHint);
     setAttribute(Qt::WA_StyledBackground, true);
+    setAutoFillBackground(true);
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window, QColor(QStringLiteral("#1a1b20")));
+    pal.setColor(QPalette::Base, QColor(QStringLiteral("#1a1b20")));
+    setPalette(pal);
     resize(panelSize());
 
     m_panel = new SwitcherPanel(m_i18n, this);
@@ -63,6 +72,7 @@ void MainWindow::showPanel(
     const QHash<qint64, QPixmap> &icons,
     const QHash<qint64, QPixmap> &thumbs,
     bool showThumbnails) {
+    setMaximumSize(panelSize());
     resize(panelSize());
     centerOnScreen();
     setCentralWidget(m_panel);
@@ -73,6 +83,7 @@ void MainWindow::showPanel(
 }
 
 void MainWindow::showSettings(Config config) {
+    setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     m_settings->setConfig(config);
     resize(520, 560);
     centerOnScreen();

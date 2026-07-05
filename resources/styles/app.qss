@@ -3,7 +3,8 @@ QMainWindow,
 QWidget#SwitcherPanel,
 QWidget#PanelContent,
 QWidget#FilterRow,
-QWidget#ContentViewport {
+QWidget#ContentViewport,
+QWidget#CardGridHost {
     background-color: #1a1b20;
     color: #eceff4;
 }
@@ -80,6 +81,49 @@ QLineEdit#SearchEdit:hover {
 }
 
 /* ---- Filter pills ---- */
+QFrame#FilterChip,
+QFrame#FilterChipActive {
+    background-color: #252830;
+    border: 1px solid #3a3f4b;
+    border-radius: 16px;
+}
+
+QFrame#FilterChipActive {
+    background-color: #3d7dd4;
+    border-color: #3d7dd4;
+}
+
+QFrame#FilterChip QToolButton#FilterPill,
+QFrame#FilterChipActive QToolButton#FilterPill {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 4px 8px 4px 12px;
+    color: #c8cdd8;
+    font-size: 12px;
+}
+
+QFrame#FilterChipActive QToolButton#FilterPill {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+QFrame#FilterChip:hover {
+    background-color: #2e323c;
+    border-color: #4d5360;
+}
+
+QFrame#FilterChip QToolButton#FilterPill:hover,
+QFrame#FilterChipActive QToolButton#FilterPill:hover {
+    color: #ffffff;
+}
+
+QFrame#FilterChip QToolButton#FilterPill:checked,
+QFrame#FilterChipActive QToolButton#FilterPill:checked {
+    background-color: transparent;
+    border: none;
+}
+
 QToolButton#FilterPill {
     background-color: #252830;
     border: 1px solid #3a3f4b;
@@ -102,6 +146,31 @@ QToolButton#FilterPill:checked {
     font-weight: 600;
 }
 
+QFrame#FilterChip QToolButton#CloseChip,
+QFrame#FilterChipActive QToolButton#CloseChip {
+    background-color: transparent;
+    border: none;
+    border-radius: 10px;
+    min-width: 22px;
+    max-width: 22px;
+    min-height: 22px;
+    max-height: 22px;
+    padding: 0;
+    color: #8b919e;
+    font-size: 14px;
+    margin: 0;
+}
+
+QFrame#FilterChipActive QToolButton#CloseChip {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+QFrame#FilterChip QToolButton#CloseChip:hover,
+QFrame#FilterChipActive QToolButton#CloseChip:hover {
+    background-color: #c0392b;
+    color: #ffffff;
+}
+
 QToolButton#CloseChip {
     background-color: transparent;
     border: 1px solid transparent;
@@ -113,8 +182,6 @@ QToolButton#CloseChip {
     padding: 0;
     color: #8b919e;
     font-size: 14px;
-    margin-left: -4px;
-    margin-right: 6px;
 }
 
 QToolButton#CloseChip:hover {
@@ -298,4 +365,22 @@ QPushButton#SecondaryButton {
 QPushButton#SecondaryButton:hover {
     background-color: #2e323c;
     color: #eceff4;
+}
+
+/* ---- Dialogs ---- */
+QMessageBox,
+QDialog {
+    background-color: #1a1b20;
+}
+
+QMessageBox QLabel,
+QDialog QLabel {
+    color: #eceff4;
+    background-color: transparent;
+    font-size: 13px;
+    min-width: 280px;
+}
+
+QMessageBox QPushButton {
+    min-width: 72px;
 }

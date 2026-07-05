@@ -2,7 +2,7 @@
 #include "ui/WindowCard.h"
 
 #include <QFrame>
-#include <QGridLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QKeyEvent>
 #include <QLineEdit>
@@ -110,7 +110,6 @@ void SwitcherPanel::rebuild() {
             m_state.selectedWindow = 0;
             rebuild();
         });
-        filterLayout->addWidget(btn);
 
         auto *closeChip = new QToolButton;
         closeChip->setText(QStringLiteral("×"));
@@ -123,10 +122,20 @@ void SwitcherPanel::rebuild() {
             action.exePath = g.exePath;
             emit actionTriggered(action);
         });
-        filterLayout->addWidget(closeChip);
+
+        auto *chip = new QFrame;
+        chip->setObjectName(on ? QStringLiteral("FilterChipActive") : QStringLiteral("FilterChip"));
+        chip->setAttribute(Qt::WA_StyledBackground, true);
+        auto *chipLayout = new QHBoxLayout(chip);
+        chipLayout->setContentsMargins(2, 2, 4, 2);
+        chipLayout->setSpacing(0);
+        chipLayout->addWidget(btn);
+        chipLayout->addWidget(closeChip);
+        filterLayout->addWidget(chip);
     }
     filterLayout->addStretch();
     filterScroll->setWidget(filterRow);
+    filterScroll->setFixedHeight(40);
     m_dynamicLayout->addWidget(filterScroll);
 
     auto *contentScroll = new QScrollArea;
@@ -176,10 +185,24 @@ void SwitcherPanel::rebuild() {
         contentLayout->addLayout(header);
 
         auto *gridHost = new QWidget;
-        auto *grid = new QGridLayout(gridHost);
-        grid->setSpacing(10);
-        const int perRow = qMax(1, width() / 230);
+        gridHost->setObjectName(QStringLiteral("CardGridHost"));
+        gridHost->setAttribute(Qt::WA_StyledBackground, true);
+        auto *rowsLayout = new QVBoxLayout(gridHost);
+        rowsLayout->setContentsMargins(0, 0, 0, 0);
+        rowsLayout->setSpacing(10);
+        rowsLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+        const int perRow = qMax(1, (width() - 32) / 236);
+        QHBoxLayout *rowLayout = nullptr;
+        int col = 0;
         for (int wi = 0; wi < g.windows.size(); ++wi) {
+            if (col == 0) {
+                rowLayout = new QHBoxLayout;
+                rowLayout->setContentsMargins(0, 0, 0, 0);
+                rowLayout->setSpacing(10);
+                rowLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+                rowsLayout->addLayout(rowLayout);
+            }
             const WindowItem &item = g.windows.at(wi);
             const bool selected = m_state.selectedGroup == gi && m_state.selectedWindow == wi;
             auto *card = new WindowCard(
@@ -200,7 +223,8 @@ void SwitcherPanel::rebuild() {
                 action.windowId = item.windowId;
                 emit actionTriggered(action);
             });
-            grid->addWidget(card, wi / perRow, wi % perRow);
+            rowLayout->addWidget(card);
+            col = (col + 1) % perRow;
         }
         contentLayout->addWidget(gridHost);
     }
