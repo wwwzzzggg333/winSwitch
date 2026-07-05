@@ -26,7 +26,7 @@ jobs:
             package: mySwitcher-linux-x64
           - os: windows-latest
             package: mySwitcher-windows-x64
-          - os: macos-latest
+          - os: macos-14
             package: mySwitcher-macos-arm64
 
     steps:
