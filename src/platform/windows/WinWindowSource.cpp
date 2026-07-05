@@ -124,6 +124,17 @@ BOOL CALLBACK enumProc(HWND hwnd, LPARAM lparam) {
     return TRUE;
 }
 
+// SEH-protected GetDIBits — must be in a function without C++ destructors
+// to avoid MSVC C2712 (cannot use __try in functions requiring object unwinding).
+static int safeGetDIBits(
+    HDC hdc, HBITMAP hbm, UINT start, UINT cLines, void *bits, BITMAPINFO *bi, UINT usage) {
+    __try {
+        return GetDIBits(hdc, hbm, start, cLines, bits, bi, usage);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return 0;
+    }
+}
+
 ImageRgba imageFromQImage(QImage image) {
     if (image.isNull()) {
         return {};
@@ -208,13 +219,8 @@ ImageRgba captureHicon(HICON hicon, bool destroyIcon) {
         bi.bmiHeader.biPlanes = 1;
         bi.bmiHeader.biBitCount = 32;
         bi.bmiHeader.biCompression = BI_RGB;
-        int got = 0;
-        __try {
-            got = GetDIBits(
+        int got = safeGetDIBits(
                 memDc, bmp, 0, kIconDrawSize, image.pixels.data(), &bi, DIB_RGB_COLORS);
-        } __except (EXCEPTION_EXECUTE_HANDLER) {
-            got = 0;
-        }
         if (got == 0) {
             image = {};
         } else {
@@ -374,12 +380,7 @@ public:
         image.width = fullW;
         image.height = fullH;
         image.pixels.resize(fullW * fullH * 4);
-        int got = 0;
-        __try {
-            got = GetDIBits(memDc, bmp, 0, fullH, image.pixels.data(), &bi, DIB_RGB_COLORS);
-        } __except (EXCEPTION_EXECUTE_HANDLER) {
-            got = 0;
-        }
+        int got = safeGetDIBits(memDc, bmp, 0, fullH, image.pixels.data(), &bi, DIB_RGB_COLORS);
         SelectObject(memDc, old);
         DeleteObject(bmp);
         DeleteDC(memDc);
