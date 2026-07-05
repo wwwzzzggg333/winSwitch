@@ -7,6 +7,17 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows
+          - linux
+          - macos
 
 permissions:
   contents: read
@@ -18,16 +29,23 @@ jobs:
   build:
     name: Build (${{ matrix.package }})
     runs-on: ${{ matrix.os }}
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.platform == 'all' ||
+      github.event.inputs.platform == matrix.platform_id
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             package: mySwitcher-linux-x64
+            platform_id: linux
           - os: windows-latest
             package: mySwitcher-windows-x64
+            platform_id: windows
           - os: macos-14
             package: mySwitcher-macos-arm64
+            platform_id: macos
 
     steps:
       - name: Checkout
