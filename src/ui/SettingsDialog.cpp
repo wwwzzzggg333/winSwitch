@@ -114,7 +114,9 @@ QWidget *SettingsDialog::buildGeneralTab() {
 
     auto *ioRow = new QHBoxLayout;
     auto *importBtn = new QPushButton(m_i18n.importConfig());
+    importBtn->setObjectName(QStringLiteral("SecondaryButton"));
     auto *exportBtn = new QPushButton(m_i18n.exportConfig());
+    exportBtn->setObjectName(QStringLiteral("SecondaryButton"));
     connect(importBtn, &QPushButton::clicked, this, &SettingsDialog::onImportConfig);
     connect(exportBtn, &QPushButton::clicked, this, &SettingsDialog::onExportConfig);
     ioRow->addWidget(importBtn);

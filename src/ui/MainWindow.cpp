@@ -14,6 +14,7 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     : QMainWindow(parent), m_config(config), m_i18n(i18n) {
     setWindowTitle(m_i18n.appTitle());
     setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_StyledBackground, true);
     resize(panelSize());
 
     m_panel = new SwitcherPanel(m_i18n, this);

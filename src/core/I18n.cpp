@@ -50,15 +50,15 @@ QString I18n::filterAll() const {
 }
 
 QString I18n::pin() const {
-    return m_locale == Locale::Zh ? QStringLiteral("📌 置顶") : QStringLiteral("📌 Pin");
+    return m_locale == Locale::Zh ? QStringLiteral("置顶") : QStringLiteral("Pin");
 }
 
 QString I18n::pinned() const {
-    return m_locale == Locale::Zh ? QStringLiteral("📌 已置顶") : QStringLiteral("📌 Pinned");
+    return m_locale == Locale::Zh ? QStringLiteral("已置顶") : QStringLiteral("Pinned");
 }
 
 QString I18n::closeAllGroup() const {
-    return m_locale == Locale::Zh ? QStringLiteral("✕ 关全部") : QStringLiteral("✕ Close all");
+    return m_locale == Locale::Zh ? QStringLiteral("关全部") : QStringLiteral("Close all");
 }
 
 QString I18n::closeGroupTooltip() const {

@@ -12,6 +12,7 @@
 
 SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i18n(i18n) {
     setObjectName(QStringLiteral("SwitcherPanel"));
+    setAttribute(Qt::WA_StyledBackground, true);
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(10, 10, 10, 10);
     root->setSpacing(8);
@@ -20,6 +21,7 @@ SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i1
     m_searchEdit->setObjectName(QStringLiteral("SearchEdit"));
     m_searchEdit->setPlaceholderText(m_i18n.searchPlaceholder());
     m_searchEdit->setClearButtonEnabled(true);
+    m_searchEdit->setMinimumHeight(36);
     m_searchEdit->installEventFilter(this);
     connect(m_searchEdit, &QLineEdit::textChanged, this, [this](const QString &text) {
         m_state.setSearchText(text);
@@ -67,11 +69,15 @@ void SwitcherPanel::rebuild() {
     }
 
     auto *filterScroll = new QScrollArea;
+    filterScroll->setObjectName(QStringLiteral("FilterScroll"));
     filterScroll->setWidgetResizable(true);
     filterScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     filterScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     filterScroll->setFrameShape(QFrame::NoFrame);
+    filterScroll->viewport()->setObjectName(QStringLiteral("ContentViewport"));
     auto *filterRow = new QWidget;
+    filterRow->setObjectName(QStringLiteral("FilterRow"));
+    filterRow->setAttribute(Qt::WA_StyledBackground, true);
     auto *filterLayout = new QHBoxLayout(filterRow);
     filterLayout->setContentsMargins(0, 0, 0, 0);
     filterLayout->setSpacing(8);
@@ -110,6 +116,7 @@ void SwitcherPanel::rebuild() {
         closeChip->setText(QStringLiteral("×"));
         closeChip->setToolTip(m_i18n.closeGroupTooltip());
         closeChip->setObjectName(QStringLiteral("CloseChip"));
+        closeChip->setCursor(Qt::PointingHandCursor);
         connect(closeChip, &QToolButton::clicked, this, [this, g]() {
             MainWindow::PanelAction action;
             action.type = MainWindow::PanelActionType::CloseGroup;
@@ -123,11 +130,16 @@ void SwitcherPanel::rebuild() {
     m_dynamicLayout->addWidget(filterScroll);
 
     auto *contentScroll = new QScrollArea;
+    contentScroll->setObjectName(QStringLiteral("ContentScroll"));
     contentScroll->setWidgetResizable(true);
     contentScroll->setFrameShape(QFrame::NoFrame);
+    contentScroll->viewport()->setObjectName(QStringLiteral("ContentViewport"));
     auto *content = new QWidget;
+    content->setObjectName(QStringLiteral("PanelContent"));
+    content->setAttribute(Qt::WA_StyledBackground, true);
     auto *contentLayout = new QVBoxLayout(content);
-    contentLayout->setSpacing(12);
+    contentLayout->setContentsMargins(0, 4, 0, 8);
+    contentLayout->setSpacing(8);
 
     const QVector<AppGroup> groups = m_state.visibleGroups();
     for (int gi = 0; gi < groups.size(); ++gi) {
@@ -139,7 +151,9 @@ void SwitcherPanel::rebuild() {
         header->addStretch();
 
         auto *pinBtn = new QToolButton;
+        pinBtn->setObjectName(g.pinned ? QStringLiteral("GroupActionPinned") : QStringLiteral("GroupAction"));
         pinBtn->setText(g.pinned ? m_i18n.pinned() : m_i18n.pin());
+        pinBtn->setCursor(Qt::PointingHandCursor);
         connect(pinBtn, &QToolButton::clicked, this, [this, g]() {
             MainWindow::PanelAction action;
             action.type = MainWindow::PanelActionType::TogglePin;
@@ -149,7 +163,9 @@ void SwitcherPanel::rebuild() {
         header->addWidget(pinBtn);
 
         auto *closeAllBtn = new QToolButton;
+        closeAllBtn->setObjectName(QStringLiteral("GroupAction"));
         closeAllBtn->setText(m_i18n.closeAllGroup());
+        closeAllBtn->setCursor(Qt::PointingHandCursor);
         connect(closeAllBtn, &QToolButton::clicked, this, [this, g]() {
             MainWindow::PanelAction action;
             action.type = MainWindow::PanelActionType::CloseGroup;
