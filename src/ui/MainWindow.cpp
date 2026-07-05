@@ -9,8 +9,10 @@
 #include <QEvent>
 #include <QFocusEvent>
 #include <QGuiApplication>
+#include <QMouseEvent>
 #include <QPalette>
 #include <QScreen>
+#include <QTimer>
 
 MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     : QMainWindow(parent), m_config(config), m_i18n(i18n) {
@@ -37,6 +39,32 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     connect(m_settings, &SettingsDialog::saved, this, [this](const Config &cfg) {
         m_config = cfg;
         emit settingsSaved(cfg);
+    });
+
+    qApp->installEventFilter(this);
+}
+
+bool MainWindow::isPanelVisible() const {
+    return isVisible() && centralWidget() == m_panel;
+}
+
+void MainWindow::scheduleFocusLostCheck() {
+    QTimer::singleShot(0, this, [this]() {
+        if (!isPanelVisible()) {
+            return;
+        }
+        QWidget *active = QApplication::activeWindow();
+        if (active == this || (active && isAncestorOf(active))) {
+            return;
+        }
+        QWidget *focus = QApplication::focusWidget();
+        if (focus && (focus == this || isAncestorOf(focus))) {
+            return;
+        }
+        if (frameGeometry().contains(QCursor::pos())) {
+            return;
+        }
+        emit focusLost();
     });
 }
 
@@ -98,6 +126,9 @@ void MainWindow::updateTextures(const QHash<qint64, QPixmap> &icons, const QHash
 }
 
 void MainWindow::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::ActivationChange && isPanelVisible() && !isActiveWindow()) {
+        scheduleFocusLostCheck();
+    }
     QMainWindow::changeEvent(event);
 }
 
@@ -112,7 +143,25 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 void MainWindow::focusOutEvent(QFocusEvent *event) {
     QMainWindow::focusOutEvent(event);
-    if (centralWidget() == m_panel) {
-        emit focusLost();
+    if (isPanelVisible()) {
+        scheduleFocusLostCheck();
     }
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+    if (isPanelVisible()) {
+        if (event->type() == QEvent::MouseButtonPress) {
+            auto *mouseEvent = static_cast<QMouseEvent *>(event);
+            const QPoint global = mouseEvent->globalPosition().toPoint();
+            if (!frameGeometry().contains(global)) {
+                QWidget *target = QApplication::widgetAt(global);
+                if (!target || (!isAncestorOf(target) && target != this)) {
+                    scheduleFocusLostCheck();
+                }
+            }
+        } else if (event->type() == QEvent::WindowDeactivate && obj == this) {
+            scheduleFocusLostCheck();
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }

@@ -27,6 +27,7 @@ set(UI_SOURCES
     src/ui/WindowCard.cpp
     src/ui/SettingsDialog.cpp
     src/ui/HotkeyEdit.cpp
+    src/ui/AppMessageBox.cpp
 )
 
 set(PLATFORM_COMMON

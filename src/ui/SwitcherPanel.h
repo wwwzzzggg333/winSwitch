@@ -8,7 +8,9 @@
 #include <QPixmap>
 #include <QWidget>
 
+class QHBoxLayout;
 class QLineEdit;
+class QScrollArea;
 class QVBoxLayout;
 
 class SwitcherPanel : public QWidget {
@@ -33,6 +35,9 @@ protected:
 
 private:
     void rebuild();
+    void rebuildFilters();
+    void rebuildContent();
+    void clearLayout(QLayout *layout);
     void emitAction(MainWindow::PanelAction action);
 
     I18n m_i18n;
@@ -41,6 +46,10 @@ private:
     QHash<qint64, QPixmap> m_thumbs;
     bool m_showThumbnails = true;
     QLineEdit *m_searchEdit = nullptr;
-    QWidget *m_dynamicHost = nullptr;
-    QVBoxLayout *m_dynamicLayout = nullptr;
+    QScrollArea *m_filterScroll = nullptr;
+    QWidget *m_filterRow = nullptr;
+    QHBoxLayout *m_filterLayout = nullptr;
+    QScrollArea *m_contentScroll = nullptr;
+    QWidget *m_contentWidget = nullptr;
+    QVBoxLayout *m_contentLayout = nullptr;
 };

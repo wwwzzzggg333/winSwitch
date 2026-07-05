@@ -53,11 +53,14 @@ protected:
     void changeEvent(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void focusOutEvent(QFocusEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     void centerOnScreen();
     QSize panelSize() const;
     QScreen *targetScreen() const;
+    void scheduleFocusLostCheck();
+    bool isPanelVisible() const;
 
     Config m_config;
     I18n m_i18n;

@@ -11,7 +11,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
-#include <QMessageBox>
+#include "ui/AppMessageBox.h"
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QRadioButton>
@@ -211,11 +211,11 @@ void SettingsDialog::onImportConfig() {
     Config imported;
     QString err;
     if (!Config::importFrom(path, &imported, &err)) {
-        QMessageBox::warning(this, m_i18n.importConfig(), m_i18n.importFailed(err));
+        showAppMessage(this, m_i18n.importConfig(), m_i18n.importFailed(err), AppMessageIcon::Warning);
         return;
     }
     setConfig(imported);
-    QMessageBox::information(this, m_i18n.importConfig(), m_i18n.importSucceeded());
+    showAppMessage(this, m_i18n.importConfig(), m_i18n.importSucceeded(), AppMessageIcon::Information);
 }
 
 void SettingsDialog::onExportConfig() {
@@ -229,8 +229,8 @@ void SettingsDialog::onExportConfig() {
     }
     QString err;
     if (!collectFromUi().exportTo(path, &err)) {
-        QMessageBox::warning(this, m_i18n.exportConfig(), m_i18n.exportFailed(err));
+        showAppMessage(this, m_i18n.exportConfig(), m_i18n.exportFailed(err), AppMessageIcon::Warning);
         return;
     }
-    QMessageBox::information(this, m_i18n.exportConfig(), m_i18n.exportSucceeded(path));
+    showAppMessage(this, m_i18n.exportConfig(), m_i18n.exportSucceeded(path), AppMessageIcon::Information);
 }

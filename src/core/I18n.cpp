@@ -143,21 +143,19 @@ QString I18n::alreadyRunningMessage() const {
     return m_locale == Locale::Zh ? QStringLiteral("程序已在运行。") : QStringLiteral("Application is already running.");
 }
 
-QString I18n::welcomeMessage(const QString &hotkey, const QString &logPath) const {
+QString I18n::welcomeMessage(const QString &hotkey) const {
     if (m_locale == Locale::Zh) {
         return QStringLiteral(
-            "程序已驻留系统托盘。\n"
+            "程序已在后台运行。\n"
             "按 %1 唤出/隐藏切换面板。\n"
-            "右键托盘图标可打开配置或退出。\n"
-            "日志：%2")
-            .arg(hotkey, logPath);
+            "右键托盘图标可打开配置或退出。")
+            .arg(hotkey);
     }
     return QStringLiteral(
-        "Running in the system tray.\n"
+        "Running in the background.\n"
         "Press %1 to show/hide the switcher panel.\n"
-        "Right-click the tray icon for settings or quit.\n"
-        "Log: %2")
-        .arg(hotkey, logPath);
+        "Right-click the tray icon for settings or quit.")
+        .arg(hotkey);
 }
 
 QString I18n::hotkeyFailedTitle() const {

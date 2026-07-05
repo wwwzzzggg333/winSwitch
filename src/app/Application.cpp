@@ -1,10 +1,11 @@
 #include "app/Application.h"
 #include "app/HotkeyManager.h"
 
+#include "ui/AppMessageBox.h"
+
 #include <QApplication>
 #include <QDateTime>
 #include <QMenu>
-#include <QMessageBox>
 #include <QSet>
 #include <QStyle>
 #include <QTimer>
@@ -24,7 +25,7 @@ void ApplicationController::showHotkeyFailure(
     const QString message = kind == HotkeyManager::HotkeyError::PlatformUnsupported
         ? m_i18n.hotkeyPlatformUnsupported()
         : m_i18n.hotkeyFailedMessage(hotkey, err);
-    QMessageBox::warning(m_mainWindow, m_i18n.hotkeyFailedTitle(), message);
+    showAppMessage(m_mainWindow, m_i18n.hotkeyFailedTitle(), message, AppMessageIcon::Warning);
 }
 
 bool ApplicationController::initialize() {
@@ -51,7 +52,7 @@ bool ApplicationController::initialize() {
     connect(m_mainWindow, &MainWindow::panelActionRequested, this, &ApplicationController::onPanelAction);
     connect(m_mainWindow, &MainWindow::settingsSaved, this, &ApplicationController::onSettingsSaved);
     connect(m_mainWindow, &MainWindow::focusLost, this, [this]() {
-        if (m_view == View::Panel && !m_texturesLoading) {
+        if (m_view == View::Panel) {
             hideAll();
         }
     });
@@ -65,10 +66,11 @@ bool ApplicationController::initialize() {
 
     if (!Config::welcomeShown()) {
         Config::markWelcomeShown();
-        QMessageBox::information(
+        showAppMessage(
             nullptr,
             m_i18n.appTitle(),
-            m_i18n.welcomeMessage(m_config.hotkey, Config::logPath()));
+            m_i18n.welcomeMessage(m_config.hotkey),
+            AppMessageIcon::Information);
     }
 
     return true;
@@ -295,10 +297,11 @@ void ApplicationController::onSettingsSaved(const Config &cfg) {
             const QString reason = kind == HotkeyManager::HotkeyError::PlatformUnsupported
                 ? m_i18n.hotkeyPlatformUnsupported()
                 : m_i18n.hotkeyFailedMessage(cfg.hotkey, err);
-            QMessageBox::warning(
+            showAppMessage(
                 m_mainWindow,
                 m_i18n.hotkeyFailedTitle(),
-                m_i18n.hotkeyRolledBack(oldHotkey, reason));
+                m_i18n.hotkeyRolledBack(oldHotkey, reason),
+                AppMessageIcon::Warning);
         }
         m_tray->setToolTip(m_i18n.trayTooltip(m_config.hotkey));
     }

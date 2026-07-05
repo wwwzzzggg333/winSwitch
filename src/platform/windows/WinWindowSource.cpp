@@ -8,6 +8,7 @@
 
 #include <QHash>
 #include <QImage>
+#include <QSet>
 #include <algorithm>
 
 #ifndef PROCESS_NAME_WIN32
@@ -51,48 +52,55 @@ QString exePathOf(DWORD pid) {
 
 struct EnumContext {
     QList<RawWindow> *out = nullptr;
+    QSet<qint64> *seen = nullptr;
 };
 
-BOOL CALLBACK enumProc(HWND hwnd, LPARAM lparam) {
-    auto *ctx = reinterpret_cast<EnumContext *>(lparam);
-    if (!IsWindowVisible(hwnd)) {
-        return TRUE;
+bool appendWindowFromHwnd(HWND hwnd, EnumContext *ctx) {
+    if (!ctx || !ctx->out || !ctx->seen) {
+        return false;
+    }
+    const qint64 id = reinterpret_cast<qint64>(hwnd);
+    if (ctx->seen->contains(id)) {
+        return false;
+    }
+    if (!IsWindow(hwnd) || !IsWindowVisible(hwnd)) {
+        return false;
     }
     const int len = GetWindowTextLengthW(hwnd);
     if (len <= 0) {
-        return TRUE;
+        return false;
     }
     QVector<wchar_t> buf(len + 1);
     const int n = GetWindowTextW(hwnd, buf.data(), len + 1);
     if (n <= 0) {
-        return TRUE;
+        return false;
     }
     const QString title = QString::fromWCharArray(buf.data(), n);
     const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
     if (exStyle & WS_EX_TOOLWINDOW) {
-        return TRUE;
+        return false;
     }
     DWORD cloaked = 0;
     DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked));
     if (cloaked != 0) {
-        return TRUE;
+        return false;
     }
     DWORD pid = 0;
     GetWindowThreadProcessId(hwnd, &pid);
     if (pid == ownPid()) {
-        return TRUE;
+        return false;
     }
     const QString cls = windowClass(hwnd);
     if (cls.compare(QStringLiteral("tooltips_class32"), Qt::CaseInsensitive) == 0
         || cls.compare(QStringLiteral("SysShadow"), Qt::CaseInsensitive) == 0) {
-        return TRUE;
+        return false;
     }
     if (isSpuriousTitle(title)) {
-        return TRUE;
+        return false;
     }
     const QString exePath = exePathOf(pid);
     if (exePath.isEmpty()) {
-        return TRUE;
+        return false;
     }
     const int slash = qMax(exePath.lastIndexOf('\\'), exePath.lastIndexOf('/'));
     QString appName = exePath.mid(slash + 1);
@@ -100,11 +108,18 @@ BOOL CALLBACK enumProc(HWND hwnd, LPARAM lparam) {
         appName.chop(4);
     }
     RawWindow w;
-    w.windowId = reinterpret_cast<qint64>(hwnd);
+    w.windowId = id;
     w.title = title;
     w.exePath = exePath;
     w.appName = appName;
     ctx->out->append(w);
+    ctx->seen->insert(id);
+    return true;
+}
+
+BOOL CALLBACK enumProc(HWND hwnd, LPARAM lparam) {
+    auto *ctx = reinterpret_cast<EnumContext *>(lparam);
+    appendWindowFromHwnd(hwnd, ctx);
     return TRUE;
 }
 
@@ -112,9 +127,15 @@ class WinWindowSource final : public IWindowSource {
 public:
     QList<RawWindow> listWindows() override {
         QList<RawWindow> out;
-        EnumContext ctx{&out};
+        QSet<qint64> seen;
+        EnumContext ctx{&out, &seen};
         EnumWindows(enumProc, reinterpret_cast<LPARAM>(&ctx));
+
         const QHash<qint64, QString> paths = explorerPaths();
+        for (auto it = paths.constBegin(); it != paths.constEnd(); ++it) {
+            appendWindowFromHwnd(reinterpret_cast<HWND>(it.key()), &ctx);
+        }
+
         QList<RawWindow> filtered;
         for (RawWindow &w : out) {
             if (w.appName.compare(QStringLiteral("explorer"), Qt::CaseInsensitive) == 0) {

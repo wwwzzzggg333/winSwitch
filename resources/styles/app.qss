@@ -15,6 +15,16 @@ QScrollArea#ContentScroll {
     border: none;
 }
 
+QScrollArea#FilterScroll {
+    min-height: 44px;
+    max-height: 44px;
+}
+
+QWidget#FilterViewport,
+QWidget#FilterRow {
+    background-color: #1a1b20;
+}
+
 QScrollArea#FilterScroll > QWidget > QWidget,
 QScrollArea#ContentScroll > QWidget > QWidget {
     background-color: #1a1b20;
@@ -368,19 +378,26 @@ QPushButton#SecondaryButton:hover {
 }
 
 /* ---- Dialogs ---- */
-QMessageBox,
+QDialog#AppMessageBox {
+    background-color: #1a1b20;
+}
+
+QLabel#AppMessageText {
+    color: #eceff4;
+    font-size: 13px;
+    padding-top: 4px;
+}
+
+QDialogButtonBox#AppMessageButtons QPushButton {
+    min-width: 72px;
+}
+
 QDialog {
     background-color: #1a1b20;
 }
 
-QMessageBox QLabel,
 QDialog QLabel {
     color: #eceff4;
     background-color: transparent;
     font-size: 13px;
-    min-width: 280px;
-}
-
-QMessageBox QPushButton {
-    min-width: 72px;
 }

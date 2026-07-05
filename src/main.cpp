@@ -3,9 +3,10 @@
 #include "core/Config.h"
 #include "core/I18n.h"
 
+#include "ui/AppMessageBox.h"
+
 #include <QApplication>
 #include <QFile>
-#include <QMessageBox>
 #include <QStyle>
 
 static void loadStyleSheet(QApplication &app) {
@@ -27,7 +28,7 @@ int main(int argc, char *argv[]) {
     if (instance.isAnotherRunning()) {
         const Config cfg = Config::load();
         const I18n i18n = I18n::fromConfig(cfg);
-        QMessageBox::information(nullptr, i18n.appTitle(), i18n.alreadyRunningMessage());
+        showAppMessage(nullptr, i18n.appTitle(), i18n.alreadyRunningMessage(), AppMessageIcon::Information);
         return 0;
     }
 

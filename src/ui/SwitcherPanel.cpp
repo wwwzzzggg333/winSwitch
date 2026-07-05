@@ -14,26 +14,54 @@ SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i1
     setObjectName(QStringLiteral("SwitcherPanel"));
     setAttribute(Qt::WA_StyledBackground, true);
     auto *root = new QVBoxLayout(this);
-    root->setContentsMargins(10, 10, 10, 10);
-    root->setSpacing(8);
+    root->setContentsMargins(12, 12, 12, 12);
+    root->setSpacing(10);
 
     m_searchEdit = new QLineEdit;
     m_searchEdit->setObjectName(QStringLiteral("SearchEdit"));
     m_searchEdit->setPlaceholderText(m_i18n.searchPlaceholder());
     m_searchEdit->setClearButtonEnabled(true);
-    m_searchEdit->setMinimumHeight(36);
+    m_searchEdit->setFixedHeight(40);
     m_searchEdit->installEventFilter(this);
     connect(m_searchEdit, &QLineEdit::textChanged, this, [this](const QString &text) {
         m_state.setSearchText(text);
-        rebuild();
+        rebuildContent();
     });
     root->addWidget(m_searchEdit);
 
-    m_dynamicHost = new QWidget;
-    m_dynamicLayout = new QVBoxLayout(m_dynamicHost);
-    m_dynamicLayout->setContentsMargins(0, 0, 0, 0);
-    m_dynamicLayout->setSpacing(8);
-    root->addWidget(m_dynamicHost, 1);
+    m_filterScroll = new QScrollArea;
+    m_filterScroll->setObjectName(QStringLiteral("FilterScroll"));
+    m_filterScroll->setWidgetResizable(true);
+    m_filterScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_filterScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_filterScroll->setFrameShape(QFrame::NoFrame);
+    m_filterScroll->setFixedHeight(44);
+    m_filterScroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_filterScroll->viewport()->setObjectName(QStringLiteral("FilterViewport"));
+
+    m_filterRow = new QWidget;
+    m_filterRow->setObjectName(QStringLiteral("FilterRow"));
+    m_filterRow->setAttribute(Qt::WA_StyledBackground, true);
+    m_filterRow->setMinimumHeight(36);
+    m_filterLayout = new QHBoxLayout(m_filterRow);
+    m_filterLayout->setContentsMargins(0, 2, 0, 2);
+    m_filterLayout->setSpacing(8);
+    m_filterScroll->setWidget(m_filterRow);
+    root->addWidget(m_filterScroll);
+
+    m_contentScroll = new QScrollArea;
+    m_contentScroll->setObjectName(QStringLiteral("ContentScroll"));
+    m_contentScroll->setWidgetResizable(true);
+    m_contentScroll->setFrameShape(QFrame::NoFrame);
+    m_contentScroll->viewport()->setObjectName(QStringLiteral("ContentViewport"));
+    m_contentWidget = new QWidget;
+    m_contentWidget->setObjectName(QStringLiteral("PanelContent"));
+    m_contentWidget->setAttribute(Qt::WA_StyledBackground, true);
+    m_contentLayout = new QVBoxLayout(m_contentWidget);
+    m_contentLayout->setContentsMargins(0, 4, 0, 8);
+    m_contentLayout->setSpacing(8);
+    m_contentScroll->setWidget(m_contentWidget);
+    root->addWidget(m_contentScroll, 1);
 }
 
 void SwitcherPanel::setData(
@@ -55,32 +83,35 @@ void SwitcherPanel::setData(
 void SwitcherPanel::updateTextures(const QHash<qint64, QPixmap> &icons, const QHash<qint64, QPixmap> &thumbs) {
     m_icons = icons;
     m_thumbs = thumbs;
-    rebuild();
+    rebuildContent();
 }
 
-void SwitcherPanel::rebuild() {
-    if (!m_dynamicLayout) {
+void SwitcherPanel::clearLayout(QLayout *layout) {
+    if (!layout) {
         return;
     }
     QLayoutItem *child = nullptr;
-    while ((child = m_dynamicLayout->takeAt(0)) != nullptr) {
-        delete child->widget();
+    while ((child = layout->takeAt(0)) != nullptr) {
+        if (QLayout *sub = child->layout()) {
+            clearLayout(sub);
+            delete sub;
+        } else if (QWidget *widget = child->widget()) {
+            delete widget;
+        }
         delete child;
     }
+}
 
-    auto *filterScroll = new QScrollArea;
-    filterScroll->setObjectName(QStringLiteral("FilterScroll"));
-    filterScroll->setWidgetResizable(true);
-    filterScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    filterScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    filterScroll->setFrameShape(QFrame::NoFrame);
-    filterScroll->viewport()->setObjectName(QStringLiteral("ContentViewport"));
-    auto *filterRow = new QWidget;
-    filterRow->setObjectName(QStringLiteral("FilterRow"));
-    filterRow->setAttribute(Qt::WA_StyledBackground, true);
-    auto *filterLayout = new QHBoxLayout(filterRow);
-    filterLayout->setContentsMargins(0, 0, 0, 0);
-    filterLayout->setSpacing(8);
+void SwitcherPanel::rebuild() {
+    rebuildFilters();
+    rebuildContent();
+}
+
+void SwitcherPanel::rebuildFilters() {
+    if (!m_filterLayout) {
+        return;
+    }
+    clearLayout(m_filterLayout);
 
     auto makeFilterButton = [this](const QString &label, bool selected) {
         auto *btn = new QToolButton;
@@ -88,6 +119,7 @@ void SwitcherPanel::rebuild() {
         btn->setCheckable(true);
         btn->setChecked(selected);
         btn->setObjectName(QStringLiteral("FilterPill"));
+        btn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         return btn;
     };
 
@@ -98,7 +130,7 @@ void SwitcherPanel::rebuild() {
         m_state.selectedWindow = 0;
         rebuild();
     });
-    filterLayout->addWidget(allBtn);
+    m_filterLayout->addWidget(allBtn);
 
     for (const AppGroup &g : m_state.groups) {
         const bool on = m_state.filter.kind == FilterKind::OnlyApp && m_state.filter.exePath == g.exePath;
@@ -126,29 +158,22 @@ void SwitcherPanel::rebuild() {
         auto *chip = new QFrame;
         chip->setObjectName(on ? QStringLiteral("FilterChipActive") : QStringLiteral("FilterChip"));
         chip->setAttribute(Qt::WA_StyledBackground, true);
+        chip->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         auto *chipLayout = new QHBoxLayout(chip);
         chipLayout->setContentsMargins(2, 2, 4, 2);
         chipLayout->setSpacing(0);
         chipLayout->addWidget(btn);
         chipLayout->addWidget(closeChip);
-        filterLayout->addWidget(chip);
+        m_filterLayout->addWidget(chip);
     }
-    filterLayout->addStretch();
-    filterScroll->setWidget(filterRow);
-    filterScroll->setFixedHeight(40);
-    m_dynamicLayout->addWidget(filterScroll);
+    m_filterLayout->addStretch();
+}
 
-    auto *contentScroll = new QScrollArea;
-    contentScroll->setObjectName(QStringLiteral("ContentScroll"));
-    contentScroll->setWidgetResizable(true);
-    contentScroll->setFrameShape(QFrame::NoFrame);
-    contentScroll->viewport()->setObjectName(QStringLiteral("ContentViewport"));
-    auto *content = new QWidget;
-    content->setObjectName(QStringLiteral("PanelContent"));
-    content->setAttribute(Qt::WA_StyledBackground, true);
-    auto *contentLayout = new QVBoxLayout(content);
-    contentLayout->setContentsMargins(0, 4, 0, 8);
-    contentLayout->setSpacing(8);
+void SwitcherPanel::rebuildContent() {
+    if (!m_contentLayout) {
+        return;
+    }
+    clearLayout(m_contentLayout);
 
     const QVector<AppGroup> groups = m_state.visibleGroups();
     for (int gi = 0; gi < groups.size(); ++gi) {
@@ -182,7 +207,7 @@ void SwitcherPanel::rebuild() {
             emit actionTriggered(action);
         });
         header->addWidget(closeAllBtn);
-        contentLayout->addLayout(header);
+        m_contentLayout->addLayout(header);
 
         auto *gridHost = new QWidget;
         gridHost->setObjectName(QStringLiteral("CardGridHost"));
@@ -226,11 +251,9 @@ void SwitcherPanel::rebuild() {
             rowLayout->addWidget(card);
             col = (col + 1) % perRow;
         }
-        contentLayout->addWidget(gridHost);
+        m_contentLayout->addWidget(gridHost);
     }
-    contentLayout->addStretch();
-    contentScroll->setWidget(content);
-    m_dynamicLayout->addWidget(contentScroll, 1);
+    m_contentLayout->addStretch();
 }
 
 bool SwitcherPanel::eventFilter(QObject *obj, QEvent *event) {
@@ -273,19 +296,19 @@ void SwitcherPanel::keyPressEvent(QKeyEvent *event) {
     }
     case Qt::Key_Up:
         m_state.moveSelection(-1, 0);
-        rebuild();
+        rebuildContent();
         break;
     case Qt::Key_Down:
         m_state.moveSelection(1, 0);
-        rebuild();
+        rebuildContent();
         break;
     case Qt::Key_Left:
         m_state.moveSelection(0, -1);
-        rebuild();
+        rebuildContent();
         break;
     case Qt::Key_Right:
         m_state.moveSelection(0, 1);
-        rebuild();
+        rebuildContent();
         break;
     default:
         QWidget::keyPressEvent(event);

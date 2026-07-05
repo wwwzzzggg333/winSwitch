@@ -12,7 +12,7 @@ struct RawWindow {
     bool isListable() const {
         if (!appName.compare(QStringLiteral("explorer"), Qt::CaseInsensitive)
             || !appName.compare(QStringLiteral("Finder"), Qt::CaseInsensitive)) {
-            return !folderPath.isEmpty();
+            return !title.trimmed().isEmpty();
         }
         return true;
     }

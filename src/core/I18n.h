@@ -38,7 +38,7 @@ public:
     QString trayQuit() const;
     QString trayTooltip(const QString &hotkey) const;
     QString alreadyRunningMessage() const;
-    QString welcomeMessage(const QString &hotkey, const QString &logPath) const;
+    QString welcomeMessage(const QString &hotkey) const;
     QString hotkeyFailedTitle() const;
     QString hotkeyFailedMessage(const QString &hotkey, const QString &err) const;
     QString hotkeyPlatformUnsupported() const;
