@@ -1,6 +1,8 @@
 #include "ui/SwitcherPanel.h"
 #include "ui/WindowCard.h"
 
+#include "core/AppLog.h"
+
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -88,7 +90,11 @@ void SwitcherPanel::focusSearch() {
 void SwitcherPanel::updateTextures(const QHash<qint64, QPixmap> &icons, const QHash<qint64, QPixmap> &thumbs) {
     m_icons = icons;
     m_thumbs = thumbs;
+    AppLog::info(QStringLiteral("updateTextures: rebuilding content, icons=%1 thumbs=%2")
+                     .arg(m_icons.size())
+                     .arg(m_thumbs.size()));
     rebuildContent();
+    AppLog::info(QStringLiteral("updateTextures: rebuild done"));
 }
 
 void SwitcherPanel::clearLayout(QLayout *layout) {
@@ -178,11 +184,20 @@ void SwitcherPanel::rebuildContent() {
     if (!m_contentLayout) {
         return;
     }
+    AppLog::info(QStringLiteral("rebuildContent: start, groups=%1 width=%2")
+                     .arg(m_state.visibleGroups().size())
+                     .arg(width()));
     clearLayout(m_contentLayout);
+    AppLog::info(QStringLiteral("rebuildContent: layout cleared"));
 
     const QVector<AppGroup> groups = m_state.visibleGroups();
     for (int gi = 0; gi < groups.size(); ++gi) {
         const AppGroup &g = groups.at(gi);
+        AppLog::info(QStringLiteral("rebuildContent: group %1/%2 app=%3 windows=%4")
+                         .arg(gi + 1)
+                         .arg(groups.size())
+                         .arg(g.appName)
+                         .arg(g.windows.size()));
         auto *header = new QHBoxLayout;
         auto *title = new QLabel(QStringLiteral("%1 %2").arg(g.appName, m_i18n.windowCount(g.windows.size())));
         title->setObjectName(QStringLiteral("GroupTitle"));
@@ -259,6 +274,7 @@ void SwitcherPanel::rebuildContent() {
         m_contentLayout->addWidget(gridHost);
     }
     m_contentLayout->addStretch();
+    AppLog::info(QStringLiteral("rebuildContent: done"));
 }
 
 bool SwitcherPanel::eventFilter(QObject *obj, QEvent *event) {

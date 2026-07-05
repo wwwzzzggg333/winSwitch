@@ -243,6 +243,7 @@ void ApplicationController::loadTexturesBatch() {
                      .arg(m_pendingThumbs.size()));
     if (m_texturesLoading) {
         m_mainWindow->updateTextures(m_icons, m_thumbs);
+        AppLog::info(QStringLiteral("loadTexturesBatch: update done, scheduling next"));
         QTimer::singleShot(0, this, &ApplicationController::loadTexturesBatch);
     } else {
         m_mainWindow->updateTextures(m_icons, m_thumbs);
