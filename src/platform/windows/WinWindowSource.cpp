@@ -1,6 +1,7 @@
 #include "platform/IWindowSource.h"
 #include "platform/PlatformCapabilities.h"
 #include "platform/windows/WinExplorerPaths.h"
+#include "core/AppLog.h"
 
 #include <windows.h>
 #include <dwmapi.h>
@@ -184,7 +185,19 @@ public:
         if (!IsWindow(hwnd)) {
             return {};
         }
-        HICON hicon = reinterpret_cast<HICON>(SendMessageW(hwnd, WM_GETICON, ICON_BIG, 0));
+#if defined(_MSC_VER)
+        __try {
+#endif
+        DWORD_PTR iconResult = 0;
+        SendMessageTimeoutW(
+            hwnd,
+            WM_GETICON,
+            ICON_BIG,
+            0,
+            SMTO_ABORTIFHUNG | SMTO_NORMAL,
+            80,
+            &iconResult);
+        HICON hicon = reinterpret_cast<HICON>(iconResult);
         if (!hicon) {
             hicon = reinterpret_cast<HICON>(GetClassLongPtrW(hwnd, GCLP_HICON));
         }
@@ -220,7 +233,17 @@ public:
         image.height = h;
         image.pixels.resize(w * h * 4);
         HDC dc = CreateCompatibleDC(nullptr);
-        GetDIBits(dc, info.hbmColor, 0, h, image.pixels.data(), &bi, DIB_RGB_COLORS);
+        if (!dc) {
+            DeleteObject(info.hbmColor);
+            DeleteObject(info.hbmMask);
+            return {};
+        }
+        if (GetDIBits(dc, info.hbmColor, 0, h, image.pixels.data(), &bi, DIB_RGB_COLORS) == 0) {
+            DeleteDC(dc);
+            DeleteObject(info.hbmColor);
+            DeleteObject(info.hbmMask);
+            return {};
+        }
         DeleteDC(dc);
         DeleteObject(info.hbmColor);
         DeleteObject(info.hbmMask);
@@ -228,6 +251,12 @@ public:
             std::swap(image.pixels[i], image.pixels[i + 2]);
         }
         return image;
+#if defined(_MSC_VER)
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            AppLog::warn(QStringLiteral("SEH in windowIcon, hwnd=%1").arg(windowId));
+            return {};
+        }
+#endif
     }
 };
 
@@ -241,6 +270,9 @@ public:
         if (IsIconic(hwnd)) {
             return {};
         }
+#if defined(_MSC_VER)
+        __try {
+#endif
 
         RECT windowRect{};
         if (!GetWindowRect(hwnd, &windowRect)) {
@@ -256,9 +288,27 @@ public:
         }
 
         HDC screenDc = GetDC(nullptr);
+        if (!screenDc) {
+            return {};
+        }
         HDC memDc = CreateCompatibleDC(screenDc);
+        if (!memDc) {
+            ReleaseDC(nullptr, screenDc);
+            return {};
+        }
         HBITMAP bmp = CreateCompatibleBitmap(screenDc, fullW, fullH);
+        if (!bmp) {
+            DeleteDC(memDc);
+            ReleaseDC(nullptr, screenDc);
+            return {};
+        }
         HGDIOBJ old = SelectObject(memDc, bmp);
+        if (!old) {
+            DeleteObject(bmp);
+            DeleteDC(memDc);
+            ReleaseDC(nullptr, screenDc);
+            return {};
+        }
         const BOOL ok = PrintWindow(hwnd, memDc, PW_RENDERFULLCONTENT);
         BITMAPINFO bi{};
         bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -301,6 +351,12 @@ public:
             reinterpret_cast<const char *>(cropped.constBits()),
             cropped.sizeInBytes());
         return downscale(croppedImage);
+#if defined(_MSC_VER)
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            AppLog::warn(QStringLiteral("SEH in thumbnail capture, hwnd=%1").arg(windowId));
+            return {};
+        }
+#endif
     }
 
 private:

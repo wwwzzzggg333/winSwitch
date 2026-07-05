@@ -213,17 +213,25 @@ void ApplicationController::loadTexturesBatch() {
     constexpr int batch = 4;
     for (int i = 0; i < batch && !m_pendingIcons.isEmpty(); ++i) {
         const qint64 id = m_pendingIcons.takeFirst();
+        AppLog::info(QStringLiteral("capture icon: hwnd=%1").arg(id));
         const ImageRgba ic = m_iconCapture->windowIcon(id);
         if (!ic.pixels.isEmpty()) {
             m_icons.insert(id, toPixmap(ic));
+            AppLog::info(QStringLiteral("capture icon ok: hwnd=%1 size=%2x%3").arg(id).arg(ic.width).arg(ic.height));
+        } else {
+            AppLog::warn(QStringLiteral("capture icon empty: hwnd=%1").arg(id));
         }
     }
     if (m_config.thumbnail) {
         for (int i = 0; i < batch && !m_pendingThumbs.isEmpty(); ++i) {
             const qint64 id = m_pendingThumbs.takeFirst();
+            AppLog::info(QStringLiteral("capture thumb: hwnd=%1").arg(id));
             const ImageRgba tb = m_thumbnailCapture->capture(id);
             if (!tb.pixels.isEmpty()) {
                 m_thumbs.insert(id, toPixmap(tb));
+                AppLog::info(QStringLiteral("capture thumb ok: hwnd=%1 size=%2x%3").arg(id).arg(tb.width).arg(tb.height));
+            } else {
+                AppLog::warn(QStringLiteral("capture thumb empty: hwnd=%1").arg(id));
             }
         }
     }

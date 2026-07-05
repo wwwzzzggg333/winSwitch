@@ -56,13 +56,9 @@ void AppLog::init() {
 }
 
 void AppLog::info(const QString &message) {
-    writeRaw(QStringLiteral("[%1] INFO: %2")
-                 .arg(QDateTime::currentDateTime().toString(Qt::ISODateWithMs), message));
     qInfo().noquote() << message;
 }
 
 void AppLog::warn(const QString &message) {
-    writeRaw(QStringLiteral("[%1] WARN: %2")
-                 .arg(QDateTime::currentDateTime().toString(Qt::ISODateWithMs), message));
     qWarning().noquote() << message;
 }

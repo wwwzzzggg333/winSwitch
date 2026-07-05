@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QColor>
+#include <QCursor>
 #include <QEvent>
 #include <QFocusEvent>
 #include <QGuiApplication>
@@ -43,10 +44,18 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     });
 
     connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
-        if (state == Qt::ApplicationInactive && isPanelVisible()) {
-            AppLog::info(QStringLiteral("panel hide: application inactive"));
-            emit focusLost();
+        if (state != Qt::ApplicationInactive || !isPanelVisible()) {
+            return;
         }
+        QTimer::singleShot(120, this, [this]() {
+            if (!isPanelVisible()) {
+                return;
+            }
+            if (qApp->applicationState() == Qt::ApplicationInactive) {
+                AppLog::info(QStringLiteral("panel hide: application inactive"));
+                emit focusLost();
+            }
+        });
     });
 
     qApp->installEventFilter(this);
