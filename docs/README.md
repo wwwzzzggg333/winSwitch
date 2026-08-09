@@ -1,8 +1,8 @@
-# mySwitcher 文档索引
+# winSwitch 文档索引
 
 ## 文档说明
 
-本目录用于沉淀 `mySwitcher` 的项目分析、功能规划和版本路线图，方便开发、产品、测试和管理侧快速查阅。
+本目录用于沉淀 `winSwitch` 的项目分析、功能规划和版本路线图，方便开发、产品、测试和管理侧快速查阅。
 
 > 当前代码事实与维护入口：[`project-maintenance-guide.md`](project-maintenance-guide.md)。该文档基于 v0.2.0 实际代码和 Windows 11 界面整理；其余 v0.2 规划文档主要作为历史设计资料。
 
@@ -41,7 +41,7 @@
 
 文件：
 
-- [project-feature-platform-analysis.md](file:///d:/code/myprj/mySwitcher-main/docs/project-feature-platform-analysis.md)
+- [project-feature-platform-analysis.md](file:///d:/code/myprj/winSwitch-main/docs/project-feature-platform-analysis.md)
 
 适合场景：
 
@@ -62,7 +62,7 @@
 
 文件：
 
-- [project-feature-priority-matrix.md](file:///d:/code/myprj/mySwitcher-main/docs/project-feature-priority-matrix.md)
+- [project-feature-priority-matrix.md](file:///d:/code/myprj/winSwitch-main/docs/project-feature-priority-matrix.md)
 
 适合场景：
 
@@ -82,7 +82,7 @@
 
 文件：
 
-- [project-roadmap.md](file:///d:/code/myprj/mySwitcher-main/docs/project-roadmap.md)
+- [project-roadmap.md](file:///d:/code/myprj/winSwitch-main/docs/project-roadmap.md)
 
 适合场景：
 
@@ -102,7 +102,7 @@
 
 文件：
 
-- [project-one-page-summary.md](file:///d:/code/myprj/mySwitcher-main/docs/project-one-page-summary.md)
+- [project-one-page-summary.md](file:///d:/code/myprj/winSwitch-main/docs/project-one-page-summary.md)
 
 适合场景：
 
@@ -121,7 +121,7 @@
 
 文件：
 
-- [2026-06-23-mySwitcher-qt-design.md](file:///d:/code/myprj/mySwitcher-main/docs/superpowers/specs/2026-06-23-mySwitcher-qt-design.md)
+- [2026-06-23-winSwitch-qt-design.md](file:///d:/code/myprj/winSwitch-main/docs/superpowers/specs/2026-06-23-winSwitch-qt-design.md)
 
 适合场景：
 
@@ -132,7 +132,7 @@
 
 文件：
 
-- [product-execution-spec.md](file:///d:/code/myprj/mySwitcher-main/docs/product-execution-spec.md)
+- [product-execution-spec.md](file:///d:/code/myprj/winSwitch-main/docs/product-execution-spec.md)
 
 适合场景：
 
@@ -152,7 +152,7 @@
 
 文件：
 
-- [v0.2-implementation-breakdown.md](file:///d:/code/myprj/mySwitcher-main/docs/v0.2-implementation-breakdown.md)
+- [v0.2-implementation-breakdown.md](file:///d:/code/myprj/winSwitch-main/docs/v0.2-implementation-breakdown.md)
 
 适合场景：
 
@@ -174,7 +174,7 @@
 
 文件：
 
-- [thumbnail-capture-technical-analysis.md](file:///d:/code/myprj/mySwitcher-main/docs/thumbnail-capture-technical-analysis.md)
+- [thumbnail-capture-technical-analysis.md](file:///d:/code/myprj/winSwitch-main/docs/thumbnail-capture-technical-analysis.md)
 
 适合场景：
 
@@ -240,4 +240,4 @@
 
 如果只保留一句话结论，可以概括为：
 
-- `mySwitcher` 当前最适合先把 Windows 做成标杆体验，再逐步补齐 macOS 和 Linux X11 的关键缺口，同时对 Wayland 明确采用降级和限制说明策略。
+- `winSwitch` 当前最适合先把 Windows 做成标杆体验，再逐步补齐 macOS 和 Linux X11 的关键缺口，同时对 Wayland 明确采用降级和限制说明策略。

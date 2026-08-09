@@ -1,8 +1,8 @@
-# mySwitcher 缩略图抓取技术分析
+# winSwitch 缩略图抓取技术分析
 
 ## 1. 背景与问题现象
 
-`mySwitcher` 当前在 Windows 下通过 `PrintWindow` 抓取窗口缩略图。
+`winSwitch` 当前在 Windows 下通过 `PrintWindow` 抓取窗口缩略图。
 
 从实际使用现象看，已经出现以下典型问题：
 

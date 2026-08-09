@@ -16,7 +16,7 @@ env:
 
 jobs:
   build:
-    name: Build (mySwitcher-windows-x64)
+    name: Build (winSwitch-windows-x64)
     runs-on: windows-latest
 
     steps:
@@ -38,28 +38,28 @@ jobs:
       - name: Package
         shell: pwsh
         run: |
-          $packageName = "mySwitcher-windows-x64"
+          $packageName = "winSwitch-windows-x64"
           $outDir = "packages/$packageName"
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
-          if (Test-Path "build/Release/mySwitcher.exe") {
-            $exe = "build/Release/mySwitcher.exe"
-          } elseif (Test-Path "build/mySwitcher.exe") {
-            $exe = "build/mySwitcher.exe"
+          if (Test-Path "build/Release/winSwitch.exe") {
+            $exe = "build/Release/winSwitch.exe"
+          } elseif (Test-Path "build/winSwitch.exe") {
+            $exe = "build/winSwitch.exe"
           } else {
-            throw "mySwitcher.exe not found"
+            throw "winSwitch.exe not found"
           }
 
-          Copy-Item $exe "$outDir/mySwitcher.exe"
-          windeployqt --release --no-translations --no-opengl-sw --no-system-d3d-compiler "$outDir/mySwitcher.exe"
+          Copy-Item $exe "$outDir/winSwitch.exe"
+          windeployqt --release --no-translations --no-opengl-sw --no-system-d3d-compiler "$outDir/winSwitch.exe"
           Copy-Item README.md $outDir/
           Compress-Archive -Path $outDir -DestinationPath "packages/$packageName.zip"
 
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: package-mySwitcher-windows-x64
-          path: packages/mySwitcher-windows-x64.zip
+          name: package-winSwitch-windows-x64
+          path: packages/winSwitch-windows-x64.zip
           if-no-files-found: error
 
   release:

@@ -1,6 +1,6 @@
-# mySwitcher
+# winSwitch
 
-[![Build and Release](https://github.com/wwwzzzggg333/mySwitcher/actions/workflows/build.yml/badge.svg)](https://github.com/wwwzzzggg333/mySwitcher/actions/workflows/build.yml)
+[![Build and Release](https://github.com/wwwzzzggg333/winSwitch/actions/workflows/build.yml/badge.svg)](https://github.com/wwwzzzggg333/winSwitch/actions/workflows/build.yml)
 
 跨平台窗口切换管理器（C++ / Qt 6），功能对标 [WindowsSwitchEx](../WindowsSwitchEx/README.md)：
 
@@ -42,9 +42,9 @@ cmake --build build --config Release
 
 推送到 `main` / `master` 分支后，会在 **Windows / macOS / Linux** 三端自动编译，并打包为 zip。构建产物可在 Actions 页面的 **Artifacts** 中下载：
 
-- `package-mySwitcher-windows-x64.zip`（含 Qt 运行库，可直接运行）
-- `package-mySwitcher-macos-arm64.zip`（`.app` 包）
-- `package-mySwitcher-linux-x64.zip`（含 `run.sh` 启动脚本与 Qt 库）
+- `package-winSwitch-windows-x64.zip`（含 Qt 运行库，可直接运行）
+- `package-winSwitch-macos-arm64.zip`（`.app` 包）
+- `package-winSwitch-linux-x64.zip`（含 `run.sh` 启动脚本与 Qt 库）
 
 ### 发布 Release
 
@@ -55,11 +55,11 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-Release 页面：`https://github.com/wwwzzzggg333/mySwitcher/releases`
+Release 页面：`https://github.com/wwwzzzggg333/winSwitch/releases`
 
 ## 配置
 
-配置文件：`config.json`（与 exe 同目录，或 `%APPDATA%/mySwitcher/` / `~/.config/mySwitcher/`）。
+配置文件：`config.json`（与 exe 同目录，或 `%APPDATA%/winSwitch/` / `~/.config/winSwitch/`）。
 
 字段：`hotkey`、`thumbnail`、`panel_width`、`panel_height`、`language`（auto/zh/en）、`pinned`、`excluded`。
 

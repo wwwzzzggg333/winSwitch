@@ -1,4 +1,4 @@
-# mySwitcher 文档执行包设计说明
+# winSwitch 文档执行包设计说明
 
 ## 1. 背景
 

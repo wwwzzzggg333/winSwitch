@@ -137,8 +137,8 @@ QWidget *SettingsDialog::buildDiagnosticsTab() {
     const PlatformCapabilities caps = queryPlatformCapabilities();
     auto *form = new QFormLayout;
 
-#ifdef MYSWITCHER_VERSION
-    form->addRow(m_i18n.diagAppVersion(), new QLabel(QStringLiteral(MYSWITCHER_VERSION)));
+#ifdef WINSWITCH_VERSION
+    form->addRow(m_i18n.diagAppVersion(), new QLabel(QStringLiteral(WINSWITCH_VERSION)));
 #else
     form->addRow(m_i18n.diagAppVersion(), new QLabel(QStringLiteral("unknown")));
 #endif
@@ -222,7 +222,7 @@ void SettingsDialog::onExportConfig() {
     const QString path = QFileDialog::getSaveFileName(
         this,
         m_i18n.exportConfig(),
-        Config::dataDir() + QStringLiteral("/mySwitcher-config.json"),
+        Config::dataDir() + QStringLiteral("/winSwitch-config.json"),
         m_i18n.configFileFilter());
     if (path.isEmpty()) {
         return;

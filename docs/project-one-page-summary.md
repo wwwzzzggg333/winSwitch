@@ -1,8 +1,8 @@
-# mySwitcher 一页纸摘要
+# winSwitch 一页纸摘要
 
 ## 1. 项目一句话
 
-`mySwitcher` 是一个基于 Qt 6 的跨平台桌面窗口切换管理器，目标是在 Windows、macOS、Linux 上提供统一的窗口切换体验。
+`winSwitch` 是一个基于 Qt 6 的跨平台桌面窗口切换管理器，目标是在 Windows、macOS、Linux 上提供统一的窗口切换体验。
 
 ## 2. 当前状态
 

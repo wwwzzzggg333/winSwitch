@@ -1,4 +1,4 @@
-# mySwitcher Qt 跨平台设计
+# winSwitch Qt 跨平台设计
 
 ## 目标
 

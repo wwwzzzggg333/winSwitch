@@ -40,7 +40,7 @@
 把下面内容写入 `docs/thumbnail-capture-technical-analysis.md`：
 
 ```md
-# mySwitcher 缩略图抓取技术分析
+# winSwitch 缩略图抓取技术分析
 
 ## 1. 背景与问题现象
 
@@ -66,7 +66,7 @@
 ```md
 ## 1. 背景与问题现象
 
-`mySwitcher` 当前在 Windows 下通过 `PrintWindow` 抓取窗口缩略图。
+`winSwitch` 当前在 Windows 下通过 `PrintWindow` 抓取窗口缩略图。
 
 从使用现象看，已经出现以下典型问题：
 
@@ -281,7 +281,7 @@
 
 文件：
 
-- [thumbnail-capture-technical-analysis.md](file:///d:/code/myprj/mySwitcher-main/docs/thumbnail-capture-technical-analysis.md)
+- [thumbnail-capture-technical-analysis.md](file:///d:/code/myprj/winSwitch-main/docs/thumbnail-capture-technical-analysis.md)
 
 适合场景：
 

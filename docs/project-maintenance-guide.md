@@ -1,4 +1,4 @@
-# mySwitcher 项目维护与功能演进指南
+# winSwitch 项目维护与功能演进指南
 
 > 文档定位：当前代码事实基线、接手维护手册和后续功能清单
 > 基线日期：2026-08-09
@@ -7,7 +7,7 @@
 
 ## 1. 结论摘要
 
-`mySwitcher` 是一个使用 C++17 和 Qt 6 Widgets 实现的桌面窗口切换管理器。当前代码已经完成 v0.2 规划中的搜索、MRU 最近使用排序、多屏定位、热键增强、平台能力诊断、配置导入导出和 Windows 缩略图修复等主要工作。
+`winSwitch` 是一个使用 C++17 和 Qt 6 Widgets 实现的桌面窗口切换管理器。当前代码已经完成 v0.2 规划中的搜索、MRU 最近使用排序、多屏定位、热键增强、平台能力诊断、配置导入导出和 Windows 缩略图修复等主要工作。
 
 当前最准确的项目判断是：
 
@@ -213,15 +213,15 @@ cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
 cmake --build build --config Release --parallel
 ```
 
-Windows 构建会在 `mySwitcher` 链接完成后自动调用 Qt 安装目录中的 `windeployqt`。所需 Qt DLL 部署到 `build/<配置>/`（与 EXE 同级），平台插件（包括 `qwindows`）部署到 `build/<配置>/platforms/` 等子目录。分发或移动构建产物时必须保留整个 `build/<配置>/` 部署目录树，不能只复制 `mySwitcher.exe`；这样在未安装 Qt 的机器上直接运行时才不会因缺少 Qt DLL 或平台插件立即失败。
+Windows 构建会在 `winSwitch` 链接完成后自动调用 Qt 安装目录中的 `windeployqt`。所需 Qt DLL 部署到 `build/<配置>/`（与 EXE 同级），平台插件（包括 `qwindows`）部署到 `build/<配置>/platforms/` 等子目录。分发或移动构建产物时必须保留整个 `build/<配置>/` 部署目录树，不能只复制 `winSwitch.exe`；这样在未安装 Qt 的机器上直接运行时才不会因缺少 Qt DLL 或平台插件立即失败。
 
 部署检查命令：
 
 ```powershell
-.\tests\verify_windows_deployment.ps1 -ExePath .\build\Release\mySwitcher.exe -Configuration Release
+.\tests\verify_windows_deployment.ps1 -ExePath .\build\Release\winSwitch.exe -Configuration Release
 ```
 
-2026-08-09 已在当前工作区验证 Debug 和 Release 构建成功；Release 输出为 `build/Release/mySwitcher.exe`。
+2026-08-09 已在当前工作区验证 Debug 和 Release 构建成功；Release 输出为 `build/Release/winSwitch.exe`。
 
 ### 6.2 自动化现状
 
@@ -406,10 +406,10 @@ ctest --test-dir build -C Debug --output-on-failure
 
 cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
-结果：构建成功；ui_sizing、switcher_panel 共 2/2 通过；生成 build/Release/mySwitcher.exe
+结果：构建成功；ui_sizing、switcher_panel 共 2/2 通过；生成 build/Release/winSwitch.exe
 
-.\tests\verify_windows_deployment.ps1 -ExePath .\build\Debug\mySwitcher.exe -Configuration Debug
-.\tests\verify_windows_deployment.ps1 -ExePath .\build\Release\mySwitcher.exe -Configuration Release
+.\tests\verify_windows_deployment.ps1 -ExePath .\build\Debug\winSwitch.exe -Configuration Debug
+.\tests\verify_windows_deployment.ps1 -ExePath .\build\Release\winSwitch.exe -Configuration Release
 结果：Debug/Release 所需 Qt DLL 位于 EXE 输出目录；`platforms/qwindows` 插件位于 `platforms/` 子目录；完整部署目录树检查通过
 
 从进程 PATH 移除 C:\Qt\6.8.0\msvc2022_64\bin 后短时启动 Release EXE

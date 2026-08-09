@@ -179,7 +179,7 @@ QSize MainWindow::panelSize() const {
 - [ ] **Step 6: Build, test, and commit**
 
 ```powershell
-cmake --build build --config Debug --target mySwitcher test_ui_sizing
+cmake --build build --config Debug --target winSwitch test_ui_sizing
 ctest --test-dir build -C Debug -R ui_sizing --output-on-failure
 git add CMakeLists.txt src/ui/UiSizing.h src/ui/UiSizing.cpp src/ui/MainWindow.cpp tests/test_ui_sizing.cpp
 git commit -m "test: add screen-safe panel sizing"
@@ -243,7 +243,7 @@ At the end of the constructor:
 - [ ] **Step 4: Build, manually verify, and commit**
 
 ```powershell
-cmake --build build --config Debug --target mySwitcher
+cmake --build build --config Debug --target winSwitch
 git add src/ui/MainWindow.cpp
 git commit -m "fix: match Windows title bar to dark theme"
 ```
@@ -375,7 +375,7 @@ Pass `m_showThumbnails` from `SwitcherPanel` before `selected`.
 - [ ] **Step 5: Test, build, and commit**
 
 ```powershell
-cmake --build build --config Debug --target test_switcher_panel mySwitcher
+cmake --build build --config Debug --target test_switcher_panel winSwitch
 ctest --test-dir build -C Debug -R switcher_panel --output-on-failure
 git add CMakeLists.txt tests/test_switcher_panel.cpp src/core/I18n.h src/core/I18n.cpp src/ui/WindowCard.h src/ui/WindowCard.cpp src/ui/SwitcherPanel.cpp
 git commit -m "feat: clarify unavailable window previews"
@@ -500,7 +500,7 @@ QLabel#EmptyStateHint { color: #8b919e; font-size: 12px; }
 - [ ] **Step 6: Test, build, and commit**
 
 ```powershell
-cmake --build build --config Debug --target test_switcher_panel mySwitcher
+cmake --build build --config Debug --target test_switcher_panel winSwitch
 ctest --test-dir build -C Debug -R switcher_panel --output-on-failure
 git add CMakeLists.txt tests/test_switcher_panel.cpp src/core/I18n.h src/core/I18n.cpp src/ui/SwitcherPanel.cpp resources/styles/app.qss
 git commit -m "feat: show switcher empty states"
@@ -599,7 +599,7 @@ Set only the group-header “关闭全部” object name to `GroupCloseAction`. 
 - [ ] **Step 5: Test direct close behavior manually and run automation**
 
 ```powershell
-cmake --build build --config Debug --target test_switcher_panel mySwitcher
+cmake --build build --config Debug --target test_switcher_panel winSwitch
 ctest --test-dir build -C Debug --output-on-failure
 ```
 
@@ -639,7 +639,7 @@ Expected: `ui_sizing` and `switcher_panel` pass with zero failed tests.
 cmake --build build --config Release --parallel
 ```
 
-Expected: `build/Release/mySwitcher.exe` exists.
+Expected: `build/Release/winSwitch.exe` exists.
 
 - [ ] **Step 3: Run the Windows 11 visual matrix**
 
@@ -725,14 +725,14 @@ Write-Output "Qt runtime deployment verified for $Configuration at $outputDir"
 
 ```powershell
 pwsh -NoProfile -File tests/verify_windows_deployment.ps1 `
-  -ExePath build/Debug/mySwitcher.exe -Configuration Debug
+  -ExePath build/Debug/winSwitch.exe -Configuration Debug
 ```
 
 Expected: FAIL listing `Qt6Cored.dll`, `Qt6Guid.dll`, `Qt6Widgetsd.dll`, and `platforms/qwindowsd.dll` as missing.
 
 - [ ] **Step 3: Add one Windows post-build deployment command**
 
-After `qt_add_executable(mySwitcher ...)`, add:
+After `qt_add_executable(winSwitch ...)`, add:
 
 ```cmake
 if(WIN32)
@@ -743,14 +743,14 @@ if(WIN32)
         HINTS "${QT_BIN_DIR}"
         REQUIRED
     )
-    add_custom_command(TARGET mySwitcher POST_BUILD
+    add_custom_command(TARGET winSwitch POST_BUILD
         COMMAND "${WINDEPLOYQT_EXECUTABLE}"
             --$<IF:$<CONFIG:Debug>,debug,release>
             --no-translations
             --no-opengl-sw
             --no-system-d3d-compiler
-            "$<TARGET_FILE:mySwitcher>"
-        COMMENT "Deploying Qt runtime dependencies beside mySwitcher"
+            "$<TARGET_FILE:winSwitch>"
+        COMMENT "Deploying Qt runtime dependencies beside winSwitch"
         VERBATIM
     )
 endif()
@@ -762,26 +762,26 @@ Do not copy DLLs with hard-coded Qt paths. Do not deploy Qt beside test executab
 
 ```powershell
 cmake -S . -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
-cmake --build build --config Debug --target mySwitcher --clean-first
+cmake --build build --config Debug --target winSwitch --clean-first
 pwsh -NoProfile -File tests/verify_windows_deployment.ps1 `
-  -ExePath build/Debug/mySwitcher.exe -Configuration Debug
+  -ExePath build/Debug/winSwitch.exe -Configuration Debug
 ```
 
-Expected: build output contains `Deploying Qt runtime dependencies beside mySwitcher`; the script passes.
+Expected: build output contains `Deploying Qt runtime dependencies beside winSwitch`; the script passes.
 
 - [ ] **Step 5: Build and verify Release deployment**
 
 ```powershell
-cmake --build build --config Release --target mySwitcher --clean-first
+cmake --build build --config Release --target winSwitch --clean-first
 pwsh -NoProfile -File tests/verify_windows_deployment.ps1 `
-  -ExePath build/Release/mySwitcher.exe -Configuration Release
+  -ExePath build/Release/winSwitch.exe -Configuration Release
 ```
 
 Expected: release DLLs and `platforms/qwindows.dll` exist and the script passes.
 
 - [ ] **Step 6: Verify direct launch without a Qt bin PATH**
 
-Temporarily stop any existing mySwitcher instance, launch `build/Release/mySwitcher.exe` from a shell whose PATH does not contain a Qt directory, wait two seconds, and verify the process remains running. Stop the test process and restore the user's original instance afterward.
+Temporarily stop any existing winSwitch instance, launch `build/Release/winSwitch.exe` from a shell whose PATH does not contain a Qt directory, wait two seconds, and verify the process remains running. Stop the test process and restore the user's original instance afterward.
 
 - [ ] **Step 7: Commit Task 7**
 
@@ -802,5 +802,5 @@ git commit -m "build: deploy Qt runtime beside Windows executable"
 - Search, selection, pin, activation, card close, chip close, and group close do not regress.
 - Group close shows no confirmation dialog.
 - Debug and Release builds succeed; all registered Qt tests pass.
-- Debug and Release mySwitcher output directories pass `verify_windows_deployment.ps1` and launch without a Qt bin PATH.
+- Debug and Release winSwitch output directories pass `verify_windows_deployment.ps1` and launch without a Qt bin PATH.
 - Maintenance documentation reflects the implemented state.

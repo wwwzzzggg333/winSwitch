@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(mySwitcher VERSION 0.2.0 LANGUAGES CXX)
+project(winSwitch VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -67,7 +67,7 @@ elseif(UNIX)
     endif()
 endif()
 
-qt_add_executable(mySwitcher
+qt_add_executable(winSwitch
     src/main.cpp
     ${CORE_SOURCES}
     ${APP_SOURCES}
@@ -87,28 +87,28 @@ if(WIN32)
     if(NOT WINDEPLOYQT_EXECUTABLE)
         message(FATAL_ERROR "Could not find windeployqt in the Qt bin directory: ${QT_BIN_DIR}")
     endif()
-    add_custom_command(TARGET mySwitcher POST_BUILD
+    add_custom_command(TARGET winSwitch POST_BUILD
         COMMAND "${WINDEPLOYQT_EXECUTABLE}"
             --$<IF:$<CONFIG:Debug>,debug,release>
             --no-translations
             --no-opengl-sw
             --no-system-d3d-compiler
-            "$<TARGET_FILE:mySwitcher>"
-        COMMENT "Deploying Qt runtime dependencies beside mySwitcher"
+            "$<TARGET_FILE:winSwitch>"
+        COMMENT "Deploying Qt runtime dependencies beside winSwitch"
         VERBATIM
     )
 endif()
 
-target_include_directories(mySwitcher PRIVATE
+target_include_directories(winSwitch PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${LINUX_X11_INCLUDES}
 )
 
-target_compile_definitions(mySwitcher PRIVATE
-    MYSWITCHER_VERSION="${PROJECT_VERSION}"
+target_compile_definitions(winSwitch PRIVATE
+    WINSWITCH_VERSION="${PROJECT_VERSION}"
 )
 
-target_link_libraries(mySwitcher PRIVATE
+target_link_libraries(winSwitch PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -116,11 +116,11 @@ target_link_libraries(mySwitcher PRIVATE
 )
 
 if(WIN32)
-    target_link_libraries(mySwitcher PRIVATE
+    target_link_libraries(winSwitch PRIVATE
         user32 gdi32 dwmapi ole32 oleaut32 shell32 psapi
     )
 elseif(APPLE)
-    target_link_libraries(mySwitcher PRIVATE
+    target_link_libraries(winSwitch PRIVATE
         ${COCOA_FRAMEWORK}
         ${CORE_GRAPHICS_FRAMEWORK}
         ${CORE_FOUNDATION_FRAMEWORK}
@@ -129,16 +129,16 @@ elseif(APPLE)
 endif()
 
 if(WIN32)
-    set_target_properties(mySwitcher PROPERTIES WIN32_EXECUTABLE TRUE)
+    set_target_properties(winSwitch PROPERTIES WIN32_EXECUTABLE TRUE)
 elseif(APPLE)
-    set_target_properties(mySwitcher PROPERTIES
+    set_target_properties(winSwitch PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_GUI_IDENTIFIER "com.myswitcher.app"
-        MACOSX_BUNDLE_BUNDLE_NAME "mySwitcher"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.winswitch.app"
+        MACOSX_BUNDLE_BUNDLE_NAME "winSwitch"
     )
 endif()
 
-install(TARGETS mySwitcher
+install(TARGETS winSwitch
     RUNTIME DESTINATION bin
     BUNDLE DESTINATION .
 )

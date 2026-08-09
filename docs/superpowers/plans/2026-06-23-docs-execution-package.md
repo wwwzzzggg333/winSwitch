@@ -46,7 +46,7 @@
 把下面内容写入 `docs/product-execution-spec.md`，先建立完整结构：
 
 ```md
-# mySwitcher 执行型产品方案
+# winSwitch 执行型产品方案
 
 ## 1. 文档目的
 
@@ -80,7 +80,7 @@
 ```md
 ## 2. 背景与现状
 
-`mySwitcher` 当前已具备托盘常驻、单实例、窗口分组、基础切换、关闭窗口、缩略图展示、设置持久化等能力。
+`winSwitch` 当前已具备托盘常驻、单实例、窗口分组、基础切换、关闭窗口、缩略图展示、设置持久化等能力。
 
 从现状看：
 
@@ -273,7 +273,7 @@ v0.2 范围说明
 把下面内容写入 `docs/v0.2-implementation-breakdown.md`：
 
 ```md
-# mySwitcher v0.2 开发任务拆解
+# winSwitch v0.2 开发任务拆解
 
 ## 1. 版本目标
 

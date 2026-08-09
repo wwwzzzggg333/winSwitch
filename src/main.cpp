@@ -20,15 +20,15 @@ static void loadStyleSheet(QApplication &app) {
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("mySwitcher"));
-    QApplication::setOrganizationName(QStringLiteral("mySwitcher"));
+    QApplication::setApplicationName(QStringLiteral("winSwitch"));
+    QApplication::setOrganizationName(QStringLiteral("winSwitch"));
     QApplication::setQuitOnLastWindowClosed(false);
     app.setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_ComputerIcon));
     loadStyleSheet(app);
     AppLog::init();
     AppLog::info(QStringLiteral("ApplicationController initializing"));
 
-    SingleInstance instance(QStringLiteral("mySwitcher_singleton"));
+    SingleInstance instance(QStringLiteral("winSwitch_singleton"));
     if (instance.isAnotherRunning()) {
         const Config cfg = Config::load();
         const I18n i18n = I18n::fromConfig(cfg);

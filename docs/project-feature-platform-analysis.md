@@ -1,8 +1,8 @@
-# mySwitcher 项目功能与平台限制分析
+# winSwitch 项目功能与平台限制分析
 
 ## 1. 项目定位
 
-`mySwitcher` 是一个基于 Qt 6 的跨平台桌面窗口切换管理器，目标是在 Windows、macOS、Linux 上提供统一的窗口切换体验。
+`winSwitch` 是一个基于 Qt 6 的跨平台桌面窗口切换管理器，目标是在 Windows、macOS、Linux 上提供统一的窗口切换体验。
 
 当前项目的核心使用路径是：
 
