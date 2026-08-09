@@ -77,6 +77,26 @@ qt_add_executable(mySwitcher
     resources/resources.qrc
 )
 
+if(WIN32)
+    get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
+    find_program(WINDEPLOYQT_EXECUTABLE
+        NAMES windeployqt
+        HINTS "${QT_BIN_DIR}"
+        REQUIRED
+    )
+    add_custom_command(TARGET mySwitcher POST_BUILD
+        COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+            --$<IF:$<CONFIG:Debug>,debug,release>
+            --no-translations
+            --no-opengl-sw
+            --no-system-d3d-compiler
+            "$<TARGET_FILE:mySwitcher>"
+        COMMENT "Deploying Qt runtime dependencies beside mySwitcher"
+        VERBATIM
+    )
+endif()
+
 target_include_directories(mySwitcher PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${LINUX_X11_INCLUDES}
