@@ -310,12 +310,17 @@ bool SwitcherPanel::eventFilter(QObject *obj, QEvent *event) {
         auto *wheel = static_cast<QWheelEvent *>(event);
         QScrollBar *bar = m_filterScroll->horizontalScrollBar();
         if (bar && bar->maximum() > bar->minimum()) {
-            const int delta = !wheel->pixelDelta().isNull()
-                ? -wheel->pixelDelta().y()
-                : -(wheel->angleDelta().y() / 120) * 48;
-            bar->setValue(bar->value() + delta);
-            wheel->accept();
-            return true;
+            const int verticalDelta = !wheel->pixelDelta().isNull()
+                ? wheel->pixelDelta().y()
+                : wheel->angleDelta().y();
+            if (verticalDelta != 0) {
+                const int delta = !wheel->pixelDelta().isNull()
+                    ? -verticalDelta
+                    : -(verticalDelta / 120) * 48;
+                bar->setValue(bar->value() + delta);
+                wheel->accept();
+                return true;
+            }
         }
     }
     if (obj == m_searchEdit && event->type() == QEvent::KeyPress) {

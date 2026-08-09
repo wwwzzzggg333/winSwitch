@@ -106,6 +106,34 @@ private slots:
         QVERIFY(scroll->horizontalScrollBar()->value() > before);
     }
 
+    void horizontalWheelUsesNativeFilterScrolling() {
+        QVector<AppGroup> groups;
+        for (int i = 0; i < 12; ++i) {
+            AppGroup group;
+            group.exePath = QStringLiteral("C:/apps/application-%1.exe").arg(i);
+            group.appName = QStringLiteral("application-%1").arg(i);
+            group.windows.append(WindowItem{i + 1, QStringLiteral("window"), {}});
+            groups.append(group);
+        }
+
+        SwitcherPanel panel(zhI18n());
+        panel.resize(420, 500);
+        panel.setData(AppState::create(groups, Filter{}), {}, {}, false);
+        panel.show();
+        QTest::qWait(1);
+
+        auto *scroll = panel.findChild<QScrollArea *>(QStringLiteral("FilterScroll"));
+        QVERIFY(scroll != nullptr);
+        auto *bar = scroll->horizontalScrollBar();
+        QVERIFY(bar->maximum() > 0);
+        bar->setValue(bar->maximum() / 2);
+        const int before = bar->value();
+        QWheelEvent wheel(QPointF(20, 20), QPointF(20, 20), {}, QPoint(-120, 0),
+                          Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QApplication::sendEvent(scroll->viewport(), &wheel);
+        QVERIFY(bar->value() != before);
+    }
+
     void groupCloseActionEmitsImmediately() {
         AppGroup group;
         group.exePath = QStringLiteral("C:/apps/application.exe");
