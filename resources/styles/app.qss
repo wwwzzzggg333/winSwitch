@@ -1,4 +1,6 @@
 /* ---- Base ---- */
+QWidget { font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif; }
+
 QMainWindow,
 QWidget#SwitcherPanel,
 QWidget#PanelContent,
@@ -16,8 +18,8 @@ QScrollArea#ContentScroll {
 }
 
 QScrollArea#FilterScroll {
-    min-height: 44px;
-    max-height: 44px;
+    min-height: 48px;
+    max-height: 48px;
 }
 
 QWidget#FilterViewport,
@@ -213,7 +215,8 @@ QLabel#GroupTitle {
     padding: 2px 0;
 }
 
-QToolButton#GroupAction {
+QToolButton#GroupAction,
+QToolButton#GroupCloseAction {
     background-color: #252830;
     border: 1px solid #3a3f4b;
     border-radius: 8px;
@@ -226,6 +229,12 @@ QToolButton#GroupAction:hover {
     background-color: #2e323c;
     border-color: #4d5360;
     color: #eceff4;
+}
+
+QToolButton#GroupCloseAction:hover {
+    background-color: #4a2528;
+    border-color: #a74349;
+    color: #ffe9ea;
 }
 
 QToolButton#GroupActionPinned {
@@ -250,7 +259,7 @@ QWidget#WindowCard:hover {
 }
 
 QWidget#WindowCard[selected="true"] {
-    border: 2px solid #3d7dd4;
+    border: 1px solid #4a90d9;
     background-color: #2a3545;
 }
 
@@ -259,6 +268,10 @@ QWidget#ThumbBox {
     border-radius: 8px;
     border: 1px solid #2a2e38;
 }
+
+QWidget#ThumbnailFallback { background-color: #181c22; }
+QLabel#ThumbnailFallbackGlyph { color: #8d96a6; font-size: 28px; }
+QLabel#ThumbnailStatus { color: #7f8999; font-size: 11px; }
 
 QLabel#CardTitle {
     color: #eceff4;

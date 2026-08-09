@@ -9,8 +9,10 @@
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 
 SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i18n(i18n) {
     setObjectName(QStringLiteral("SwitcherPanel"));
@@ -37,9 +39,10 @@ SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i1
     m_filterScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_filterScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_filterScroll->setFrameShape(QFrame::NoFrame);
-    m_filterScroll->setFixedHeight(44);
+    m_filterScroll->setFixedHeight(48);
     m_filterScroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_filterScroll->viewport()->setObjectName(QStringLiteral("FilterViewport"));
+    m_filterScroll->viewport()->installEventFilter(this);
 
     m_filterRow = new QWidget;
     m_filterRow->setObjectName(QStringLiteral("FilterRow"));
@@ -61,7 +64,7 @@ SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i1
     m_contentWidget->setAttribute(Qt::WA_StyledBackground, true);
     m_contentLayout = new QVBoxLayout(m_contentWidget);
     m_contentLayout->setContentsMargins(0, 4, 0, 8);
-    m_contentLayout->setSpacing(8);
+    m_contentLayout->setSpacing(12);
     m_contentScroll->setWidget(m_contentWidget);
     root->addWidget(m_contentScroll, 1);
 }
@@ -241,7 +244,7 @@ void SwitcherPanel::rebuildContent() {
         header->addWidget(pinBtn);
 
         auto *closeAllBtn = new QToolButton;
-        closeAllBtn->setObjectName(QStringLiteral("GroupAction"));
+        closeAllBtn->setObjectName(QStringLiteral("GroupCloseAction"));
         closeAllBtn->setText(m_i18n.closeAllGroup());
         closeAllBtn->setCursor(Qt::PointingHandCursor);
         connect(closeAllBtn, &QToolButton::clicked, this, [this, g]() {
@@ -303,6 +306,18 @@ void SwitcherPanel::rebuildContent() {
 }
 
 bool SwitcherPanel::eventFilter(QObject *obj, QEvent *event) {
+    if (m_filterScroll && obj == m_filterScroll->viewport() && event->type() == QEvent::Wheel) {
+        auto *wheel = static_cast<QWheelEvent *>(event);
+        QScrollBar *bar = m_filterScroll->horizontalScrollBar();
+        if (bar && bar->maximum() > bar->minimum()) {
+            const int delta = !wheel->pixelDelta().isNull()
+                ? -wheel->pixelDelta().y()
+                : -(wheel->angleDelta().y() / 120) * 48;
+            bar->setValue(bar->value() + delta);
+            wheel->accept();
+            return true;
+        }
+    }
     if (obj == m_searchEdit && event->type() == QEvent::KeyPress) {
         auto *ke = static_cast<QKeyEvent *>(event);
         switch (ke->key()) {
