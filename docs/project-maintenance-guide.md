@@ -2,7 +2,7 @@
 
 > 文档定位：当前代码事实基线、接手维护手册和后续功能清单
 > 基线日期：2026-08-09
-> 代码版本：`0.2.0` + 2026-08-09 Windows UI 优化基线（变更集 `59c953b..8daabfd`）
+> 代码版本：`0.2.0` + 2026-08-09 Windows UI 优化基线（以本文件所在提交为准）
 > 主要验证环境：Windows 11、Qt 6.8.0、MSVC 2022、CMake 3.16+
 
 ## 1. 结论摘要
@@ -11,7 +11,7 @@
 
 当前最准确的项目判断是：
 
-- Windows 版已经形成可日常试用的主流程；本轮补齐了深色标题栏、安全尺寸、缩略图不可用占位、空状态、筛选横向滚动和首批自动化 UI 测试。缩略图兼容性及关闭结果同步仍需持续完善。
+- Windows 版已经形成可日常试用的主流程；本轮补齐了深色标题栏、安全尺寸、缩略图不可用占位、空状态、筛选横向滚动、长标签省略、分组数量层级和首批自动化 UI 测试。缩略图兼容性及关闭结果同步仍需持续完善。
 - macOS 和 Linux 代码可以提供基础窗口枚举能力，但全局热键、图标、关闭窗口等关键能力没有闭环；当前 CI 也没有验证这两个平台。
 - Wayland 受平台安全模型限制，不应承诺与 Windows 相同的跨应用观察和控制能力。
 - 仓库已有较多规划文档，但部分“当前状态”仍停留在 v0.2 实现之前。维护时应以本文件、代码和测试结果为准，以旧文档作为历史设计输入。
@@ -46,7 +46,9 @@
 | 面板安全尺寸 | 根据工作区上限计算面板尺寸并保留边距，避免低分辨率下越界 | `src/ui/UiSizing.*`、`src/ui/MainWindow.cpp` |
 | 缩略图降级 | 无缩略图时显示应用图标及“预览不可用”占位文案 | `src/ui/WindowCard.cpp`、`src/core/I18n.*` |
 | 空状态/无搜索结果 | 明确展示“没有可切换窗口”或“没有匹配结果”及提示 | `src/ui/SwitcherPanel.cpp`、`src/core/I18n.*` |
-| 筛选横向滚动 | 顶部筛选项溢出时可横向滚动；鼠标纵向滚轮映射为横向移动 | `src/ui/SwitcherPanel.cpp` |
+| 筛选横向滚动 | 顶部筛选项溢出时可横向滚动；兼容触控板像素增量和非整格滚轮增量，并保留原生水平滚动 | `src/ui/SwitcherPanel.cpp` |
+| 长筛选标签 | 过长应用名限制宽度并省略显示，完整名称保留在工具提示中 | `src/ui/SwitcherPanel.cpp` |
+| 分组标题层级 | 应用名与窗口数量使用独立标签和不同视觉层级 | `src/ui/SwitcherPanel.cpp`、`resources/styles/app.qss` |
 | 自动化 UI 测试 | Qt Test 覆盖安全尺寸、空状态、筛选滚动和整组关闭动作；当前 CTest 共 2 项 | `tests/test_ui_sizing.cpp`、`tests/test_switcher_panel.cpp` |
 | Qt 本地运行时部署 | Windows Debug/Release 构建后自动用 `windeployqt` 将 Qt DLL 部署到 EXE 输出目录、平台插件部署到其子目录；分发时保留完整部署目录树 | `CMakeLists.txt`、`tests/verify_windows_deployment.ps1` |
 
@@ -96,7 +98,9 @@
 | 低分辨率安全尺寸 | 面板宽高受当前屏幕可用区域限制，并保留边距 | `ui_sizing` Qt Test |
 | 缩略图不可用占位 | 抓图不可用时显示应用图标与状态文案，避免大面积无意义黑底 | `switcher_panel` Qt Test；代码静态检查 |
 | 空状态和无搜索结果 | 内容区分别展示空窗口和无匹配提示 | `switcher_panel` Qt Test |
-| 筛选区横向滚动 | 筛选项过多时支持横向滚动，纵向滚轮可移动筛选区 | `switcher_panel` Qt Test |
+| 筛选区横向滚动 | 筛选项过多时支持横向滚动，触控板像素增量、非整格纵向滚轮和原生水平滚动均有处理 | `switcher_panel` Qt Test |
+| 长筛选标签 | 标签限制最大宽度并省略，工具提示保留完整应用名 | `switcher_panel` Qt Test |
+| 分组数量层级 | 应用名与窗口数量拆为 `GroupTitle`、`GroupCount`，分别设定主次样式 | `switcher_panel` Qt Test；代码静态检查 |
 
 ### 3.3 仍需完善的界面问题
 
