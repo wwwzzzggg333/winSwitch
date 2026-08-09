@@ -413,14 +413,18 @@ void showsNoMatchStateForSearch() {
     RawWindow raw{7, QStringLiteral("Terminal"), QStringLiteral("C:/terminal.exe"),
                   QStringLiteral("Terminal"), {}};
     AppState state = AppState::create(buildGroups({raw}, {}, {}), Filter{});
-    state.setSearchText(QStringLiteral("not-found"));
     SwitcherPanel panel(zhI18n());
     panel.setData(state, {}, {}, true);
+    auto *search = panel.findChild<QLineEdit *>(QStringLiteral("SearchEdit"));
+    QVERIFY(search != nullptr);
+    search->setText(QStringLiteral("not-found"));
     auto *title = panel.findChild<QLabel *>(QStringLiteral("EmptyStateTitle"));
     QVERIFY(title != nullptr);
     QCOMPARE(title->text(), QStringLiteral("没有匹配的窗口"));
 }
 ```
+
+Include `QLineEdit` in the test. Simulating text entry is required because `setData()` resets the visible search control when a panel session starts.
 
 - [ ] **Step 2: Verify both tests fail**
 
