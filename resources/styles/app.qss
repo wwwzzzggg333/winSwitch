@@ -215,6 +215,12 @@ QLabel#GroupTitle {
     padding: 2px 0;
 }
 
+QLabel#GroupCount {
+    color: #8b919e;
+    font-size: 12px;
+    padding: 2px 0;
+}
+
 QToolButton#GroupAction,
 QToolButton#GroupCloseAction {
     background-color: #252830;

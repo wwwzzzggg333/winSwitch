@@ -134,6 +134,88 @@ private slots:
         QVERIFY(bar->value() != before);
     }
 
+    void smallVerticalWheelDeltasScrollInDirection_data() {
+        QTest::addColumn<int>("angleDelta");
+        QTest::addColumn<int>("expectedDirection");
+        QTest::newRow("up-15") << 15 << -1;
+        QTest::newRow("down-15") << -15 << 1;
+        QTest::newRow("up-30") << 30 << -1;
+        QTest::newRow("down-30") << -30 << 1;
+    }
+
+    void smallVerticalWheelDeltasScrollInDirection() {
+        QFETCH(int, angleDelta);
+        QFETCH(int, expectedDirection);
+
+        QVector<AppGroup> groups;
+        for (int i = 0; i < 12; ++i) {
+            AppGroup group;
+            group.exePath = QStringLiteral("C:/apps/application-%1.exe").arg(i);
+            group.appName = QStringLiteral("application-%1").arg(i);
+            group.windows.append(WindowItem{i + 1, QStringLiteral("window"), {}});
+            groups.append(group);
+        }
+
+        SwitcherPanel panel(zhI18n());
+        panel.resize(420, 500);
+        panel.setData(AppState::create(groups, Filter{}), {}, {}, false);
+        panel.show();
+        QTest::qWait(1);
+
+        auto *scroll = panel.findChild<QScrollArea *>(QStringLiteral("FilterScroll"));
+        QVERIFY(scroll != nullptr);
+        auto *bar = scroll->horizontalScrollBar();
+        QVERIFY(bar->maximum() > 0);
+        bar->setValue(bar->maximum() / 2);
+        const int before = bar->value();
+        QWheelEvent wheel(QPointF(20, 20), QPointF(20, 20), {}, QPoint(0, angleDelta),
+                          Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QApplication::sendEvent(scroll->viewport(), &wheel);
+        QCOMPARE((bar->value() > before) - (bar->value() < before), expectedDirection);
+    }
+
+    void longFilterNameIsElidedWithFullTooltip() {
+        const QString longName = QStringLiteral(
+            "Application with an exceptionally long descriptive name that must not expand the filter row");
+        AppGroup group;
+        group.exePath = QStringLiteral("C:/apps/long-name.exe");
+        group.appName = longName;
+        group.windows.append(sampleItem());
+
+        SwitcherPanel panel(zhI18n());
+        panel.setData(AppState::create({group}, Filter{}), {}, {}, false);
+
+        QToolButton *appFilter = nullptr;
+        const auto filters = panel.findChildren<QToolButton *>(QStringLiteral("FilterPill"));
+        for (QToolButton *filter : filters) {
+            if (filter->toolTip() == longName) {
+                appFilter = filter;
+                break;
+            }
+        }
+        QVERIFY(appFilter != nullptr);
+        QVERIFY(appFilter->maximumWidth() <= 200);
+        QVERIFY(appFilter->text().contains(QChar(0x2026)));
+        QCOMPARE(appFilter->toolTip(), longName);
+    }
+
+    void groupHeaderSeparatesNameAndWindowCount() {
+        AppGroup group;
+        group.exePath = QStringLiteral("C:/apps/application.exe");
+        group.appName = QStringLiteral("application");
+        group.windows.append(sampleItem());
+
+        SwitcherPanel panel(zhI18n());
+        panel.setData(AppState::create({group}, Filter{}), {}, {}, false);
+
+        auto *name = panel.findChild<QLabel *>(QStringLiteral("GroupTitle"));
+        auto *count = panel.findChild<QLabel *>(QStringLiteral("GroupCount"));
+        QVERIFY(name != nullptr);
+        QVERIFY(count != nullptr);
+        QCOMPARE(name->text(), group.appName);
+        QCOMPARE(count->text(), QStringLiteral("(1)"));
+    }
+
     void groupCloseActionEmitsImmediately() {
         AppGroup group;
         group.exePath = QStringLiteral("C:/apps/application.exe");

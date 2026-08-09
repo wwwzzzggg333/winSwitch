@@ -4,6 +4,7 @@
 #include "core/AppLog.h"
 
 #include <QFrame>
+#include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QKeyEvent>
@@ -126,12 +127,16 @@ void SwitcherPanel::rebuildFilters() {
     }
     clearLayout(m_filterLayout);
 
-    auto makeFilterButton = [this](const QString &label, bool selected) {
+    auto makeFilterButton = [this](const QString &label, bool selected, const QString &toolTip = QString()) {
+        constexpr int filterButtonMaxWidth = 180;
+        constexpr int filterTextMaxWidth = 148;
         auto *btn = new QToolButton;
-        btn->setText(label);
+        btn->setText(btn->fontMetrics().elidedText(label, Qt::ElideRight, filterTextMaxWidth));
+        btn->setToolTip(toolTip);
         btn->setCheckable(true);
         btn->setChecked(selected);
         btn->setObjectName(QStringLiteral("FilterPill"));
+        btn->setMaximumWidth(filterButtonMaxWidth);
         btn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         return btn;
     };
@@ -147,7 +152,8 @@ void SwitcherPanel::rebuildFilters() {
 
     for (const AppGroup &g : m_state.groups) {
         const bool on = m_state.filter.kind == FilterKind::OnlyApp && m_state.filter.exePath == g.exePath;
-        auto *btn = makeFilterButton(QStringLiteral("%1 %2").arg(g.appName).arg(g.windows.size()), on);
+        auto *btn = makeFilterButton(
+            QStringLiteral("%1 %2").arg(g.appName).arg(g.windows.size()), on, g.appName);
         connect(btn, &QToolButton::clicked, this, [this, g]() {
             m_state.filter.kind = FilterKind::OnlyApp;
             m_state.filter.exePath = g.exePath;
@@ -226,9 +232,12 @@ void SwitcherPanel::rebuildContent() {
                          .arg(g.appName)
                          .arg(g.windows.size()));
         auto *header = new QHBoxLayout;
-        auto *title = new QLabel(QStringLiteral("%1 %2").arg(g.appName, m_i18n.windowCount(g.windows.size())));
+        auto *title = new QLabel(g.appName);
         title->setObjectName(QStringLiteral("GroupTitle"));
         header->addWidget(title);
+        auto *count = new QLabel(m_i18n.windowCount(g.windows.size()));
+        count->setObjectName(QStringLiteral("GroupCount"));
+        header->addWidget(count);
         header->addStretch();
 
         auto *pinBtn = new QToolButton;
@@ -314,9 +323,12 @@ bool SwitcherPanel::eventFilter(QObject *obj, QEvent *event) {
                 ? wheel->pixelDelta().y()
                 : wheel->angleDelta().y();
             if (verticalDelta != 0) {
-                const int delta = !wheel->pixelDelta().isNull()
+                int delta = !wheel->pixelDelta().isNull()
                     ? -verticalDelta
-                    : -(verticalDelta / 120) * 48;
+                    : -(verticalDelta * 48) / 120;
+                if (delta == 0) {
+                    delta = verticalDelta > 0 ? -1 : 1;
+                }
                 bar->setValue(bar->value() + delta);
                 wheel->accept();
                 return true;
