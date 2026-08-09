@@ -4,13 +4,16 @@
 #include "core/AppLog.h"
 
 #include <QFrame>
+#include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 
 SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i18n(i18n) {
     setObjectName(QStringLiteral("SwitcherPanel"));
@@ -37,9 +40,10 @@ SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i1
     m_filterScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_filterScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_filterScroll->setFrameShape(QFrame::NoFrame);
-    m_filterScroll->setFixedHeight(44);
+    m_filterScroll->setFixedHeight(48);
     m_filterScroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_filterScroll->viewport()->setObjectName(QStringLiteral("FilterViewport"));
+    m_filterScroll->viewport()->installEventFilter(this);
 
     m_filterRow = new QWidget;
     m_filterRow->setObjectName(QStringLiteral("FilterRow"));
@@ -61,7 +65,7 @@ SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i1
     m_contentWidget->setAttribute(Qt::WA_StyledBackground, true);
     m_contentLayout = new QVBoxLayout(m_contentWidget);
     m_contentLayout->setContentsMargins(0, 4, 0, 8);
-    m_contentLayout->setSpacing(8);
+    m_contentLayout->setSpacing(12);
     m_contentScroll->setWidget(m_contentWidget);
     root->addWidget(m_contentScroll, 1);
 }
@@ -123,12 +127,16 @@ void SwitcherPanel::rebuildFilters() {
     }
     clearLayout(m_filterLayout);
 
-    auto makeFilterButton = [this](const QString &label, bool selected) {
+    auto makeFilterButton = [this](const QString &label, bool selected, const QString &toolTip = QString()) {
+        constexpr int filterButtonMaxWidth = 180;
+        constexpr int filterTextMaxWidth = 148;
         auto *btn = new QToolButton;
-        btn->setText(label);
+        btn->setText(btn->fontMetrics().elidedText(label, Qt::ElideRight, filterTextMaxWidth));
+        btn->setToolTip(toolTip);
         btn->setCheckable(true);
         btn->setChecked(selected);
         btn->setObjectName(QStringLiteral("FilterPill"));
+        btn->setMaximumWidth(filterButtonMaxWidth);
         btn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         return btn;
     };
@@ -144,7 +152,8 @@ void SwitcherPanel::rebuildFilters() {
 
     for (const AppGroup &g : m_state.groups) {
         const bool on = m_state.filter.kind == FilterKind::OnlyApp && m_state.filter.exePath == g.exePath;
-        auto *btn = makeFilterButton(QStringLiteral("%1 %2").arg(g.appName).arg(g.windows.size()), on);
+        auto *btn = makeFilterButton(
+            QStringLiteral("%1 %2").arg(g.appName).arg(g.windows.size()), on, g.appName);
         connect(btn, &QToolButton::clicked, this, [this, g]() {
             m_state.filter.kind = FilterKind::OnlyApp;
             m_state.filter.exePath = g.exePath;
@@ -190,6 +199,31 @@ void SwitcherPanel::rebuildContent() {
     AppLog::info(QStringLiteral("rebuildContent: layout cleared"));
 
     const QVector<AppGroup> groups = m_state.visibleGroups();
+    if (groups.isEmpty()) {
+        auto *emptyState = new QWidget;
+        emptyState->setObjectName(QStringLiteral("EmptyState"));
+        auto *layout = new QVBoxLayout(emptyState);
+        layout->setAlignment(Qt::AlignCenter);
+        layout->setSpacing(8);
+        const bool searching = !m_state.searchText.trimmed().isEmpty();
+        auto *glyph = new QLabel(QStringLiteral("⌕"));
+        glyph->setObjectName(QStringLiteral("EmptyStateGlyph"));
+        glyph->setAlignment(Qt::AlignCenter);
+        layout->addWidget(glyph);
+        auto *title = new QLabel(searching ? m_i18n.noMatchingWindows()
+                                           : m_i18n.noSwitchableWindows());
+        title->setObjectName(QStringLiteral("EmptyStateTitle"));
+        title->setAlignment(Qt::AlignCenter);
+        layout->addWidget(title);
+        auto *hint = new QLabel(searching ? m_i18n.noMatchingWindowsHint()
+                                          : m_i18n.emptyWindowsHint());
+        hint->setObjectName(QStringLiteral("EmptyStateHint"));
+        hint->setAlignment(Qt::AlignCenter);
+        hint->setWordWrap(true);
+        layout->addWidget(hint);
+        m_contentLayout->addWidget(emptyState, 1);
+        return;
+    }
     for (int gi = 0; gi < groups.size(); ++gi) {
         const AppGroup &g = groups.at(gi);
         AppLog::info(QStringLiteral("rebuildContent: group %1/%2 app=%3 windows=%4")
@@ -198,9 +232,12 @@ void SwitcherPanel::rebuildContent() {
                          .arg(g.appName)
                          .arg(g.windows.size()));
         auto *header = new QHBoxLayout;
-        auto *title = new QLabel(QStringLiteral("%1 %2").arg(g.appName, m_i18n.windowCount(g.windows.size())));
+        auto *title = new QLabel(g.appName);
         title->setObjectName(QStringLiteral("GroupTitle"));
         header->addWidget(title);
+        auto *count = new QLabel(m_i18n.windowCount(g.windows.size()));
+        count->setObjectName(QStringLiteral("GroupCount"));
+        header->addWidget(count);
         header->addStretch();
 
         auto *pinBtn = new QToolButton;
@@ -216,7 +253,7 @@ void SwitcherPanel::rebuildContent() {
         header->addWidget(pinBtn);
 
         auto *closeAllBtn = new QToolButton;
-        closeAllBtn->setObjectName(QStringLiteral("GroupAction"));
+        closeAllBtn->setObjectName(QStringLiteral("GroupCloseAction"));
         closeAllBtn->setText(m_i18n.closeAllGroup());
         closeAllBtn->setCursor(Qt::PointingHandCursor);
         connect(closeAllBtn, &QToolButton::clicked, this, [this, g]() {
@@ -253,6 +290,7 @@ void SwitcherPanel::rebuildContent() {
                 item,
                 m_icons.value(item.windowId),
                 m_showThumbnails ? m_thumbs.value(item.windowId) : QPixmap(),
+                m_showThumbnails,
                 selected,
                 m_i18n);
             connect(card, &WindowCard::activateRequested, this, [this, item]() {
@@ -277,6 +315,26 @@ void SwitcherPanel::rebuildContent() {
 }
 
 bool SwitcherPanel::eventFilter(QObject *obj, QEvent *event) {
+    if (m_filterScroll && obj == m_filterScroll->viewport() && event->type() == QEvent::Wheel) {
+        auto *wheel = static_cast<QWheelEvent *>(event);
+        QScrollBar *bar = m_filterScroll->horizontalScrollBar();
+        if (bar && bar->maximum() > bar->minimum()) {
+            const int verticalDelta = !wheel->pixelDelta().isNull()
+                ? wheel->pixelDelta().y()
+                : wheel->angleDelta().y();
+            if (verticalDelta != 0) {
+                int delta = !wheel->pixelDelta().isNull()
+                    ? -verticalDelta
+                    : -(verticalDelta * 48) / 120;
+                if (delta == 0) {
+                    delta = verticalDelta > 0 ? -1 : 1;
+                }
+                bar->setValue(bar->value() + delta);
+                wheel->accept();
+                return true;
+            }
+        }
+    }
     if (obj == m_searchEdit && event->type() == QEvent::KeyPress) {
         auto *ke = static_cast<QKeyEvent *>(event);
         switch (ke->key()) {

@@ -1,6 +1,7 @@
 #include "ui/MainWindow.h"
 #include "ui/SettingsDialog.h"
 #include "ui/SwitcherPanel.h"
+#include "ui/UiSizing.h"
 
 #include "core/AppLog.h"
 
@@ -15,6 +16,30 @@
 #include <QPalette>
 #include <QScreen>
 #include <QTimer>
+
+#if defined(Q_OS_WIN)
+#include <dwmapi.h>
+#include <windows.h>
+#endif
+
+namespace {
+#if defined(Q_OS_WIN)
+bool applyWindowsDarkTitleBar(QWidget *window) {
+    if (!window) {
+        return false;
+    }
+    const HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    const BOOL enabled = TRUE;
+    constexpr DWORD currentAttribute = 20;
+    HRESULT result = DwmSetWindowAttribute(hwnd, currentAttribute, &enabled, sizeof(enabled));
+    if (FAILED(result)) {
+        constexpr DWORD legacyAttribute = 19;
+        result = DwmSetWindowAttribute(hwnd, legacyAttribute, &enabled, sizeof(enabled));
+    }
+    return SUCCEEDED(result);
+}
+#endif
+} // namespace
 
 MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     : QMainWindow(parent), m_config(config), m_i18n(i18n) {
@@ -63,6 +88,12 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     });
 
     qApp->installEventFilter(this);
+
+#if defined(Q_OS_WIN)
+    if (!applyWindowsDarkTitleBar(this)) {
+        AppLog::warn(QStringLiteral("Windows dark title bar is unavailable"));
+    }
+#endif
 }
 
 bool MainWindow::isPanelVisible() const {
@@ -79,11 +110,11 @@ QScreen *MainWindow::targetScreen() const {
 
 QSize MainWindow::panelSize() const {
     QScreen *screen = targetScreen();
-    const QSize monitor = screen ? screen->availableGeometry().size() : QSize(1920, 1080);
-    const int autoW = qBound(840, static_cast<int>(monitor.width() * 0.70), 1280);
-    const int autoH = qBound(540, static_cast<int>(monitor.height() * 0.62), 820);
-    return QSize(qMax(static_cast<int>(m_config.panelWidth), autoW),
-                 qMax(static_cast<int>(m_config.panelHeight), autoH));
+    const QSize available = screen ? screen->availableGeometry().size() : QSize(1920, 1080);
+    const QSize configured(
+        qMax(1, static_cast<int>(m_config.panelWidth)),
+        qMax(1, static_cast<int>(m_config.panelHeight)));
+    return calculatePanelSize(available, configured);
 }
 
 void MainWindow::centerOnScreen() {

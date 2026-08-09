@@ -15,6 +15,7 @@ public:
         const WindowItem &item,
         const QPixmap &icon,
         const QPixmap &thumbnail,
+        bool thumbnailsEnabled,
         bool selected,
         I18n i18n,
         QWidget *parent = nullptr);

@@ -21,6 +21,11 @@ public:
     QString closeAllGroup() const;
     QString closeGroupTooltip() const;
     QString closeWindowTooltip() const;
+    QString previewUnavailable() const;
+    QString noSwitchableWindows() const;
+    QString noMatchingWindows() const;
+    QString emptyWindowsHint() const;
+    QString noMatchingWindowsHint() const;
     QString windowCount(int count) const;
     QString hotkeyLabel() const;
     QString hotkeyHint() const;

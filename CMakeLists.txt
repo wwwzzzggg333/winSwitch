@@ -7,7 +7,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Test)
+include(CTest)
 
 set(CORE_SOURCES
     src/core/Config.cpp
@@ -24,6 +25,7 @@ set(APP_SOURCES
 
 set(UI_SOURCES
     src/ui/MainWindow.cpp
+    src/ui/UiSizing.cpp
     src/ui/SwitcherPanel.cpp
     src/ui/WindowCard.cpp
     src/ui/SettingsDialog.cpp
@@ -75,6 +77,28 @@ qt_add_executable(mySwitcher
     resources/resources.qrc
 )
 
+if(WIN32)
+    get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
+    find_program(WINDEPLOYQT_EXECUTABLE
+        NAMES windeployqt
+        HINTS "${QT_BIN_DIR}"
+    )
+    if(NOT WINDEPLOYQT_EXECUTABLE)
+        message(FATAL_ERROR "Could not find windeployqt in the Qt bin directory: ${QT_BIN_DIR}")
+    endif()
+    add_custom_command(TARGET mySwitcher POST_BUILD
+        COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+            --$<IF:$<CONFIG:Debug>,debug,release>
+            --no-translations
+            --no-opengl-sw
+            --no-system-d3d-compiler
+            "$<TARGET_FILE:mySwitcher>"
+        COMMENT "Deploying Qt runtime dependencies beside mySwitcher"
+        VERBATIM
+    )
+endif()
+
 target_include_directories(mySwitcher PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${LINUX_X11_INCLUDES}
@@ -118,3 +142,32 @@ install(TARGETS mySwitcher
     RUNTIME DESTINATION bin
     BUNDLE DESTINATION .
 )
+
+if(BUILD_TESTING)
+    qt_add_executable(test_ui_sizing
+        tests/test_ui_sizing.cpp
+        src/ui/UiSizing.cpp
+    )
+    target_include_directories(test_ui_sizing PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(test_ui_sizing PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME ui_sizing COMMAND test_ui_sizing)
+    set_tests_properties(ui_sizing PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
+    )
+
+    qt_add_executable(test_switcher_panel
+        tests/test_switcher_panel.cpp
+        src/ui/SwitcherPanel.cpp
+        src/ui/WindowCard.cpp
+        src/core/WindowModel.cpp
+        src/core/I18n.cpp
+        src/core/Config.cpp
+        src/core/AppLog.cpp
+    )
+    target_include_directories(test_switcher_panel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(test_switcher_panel PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+    add_test(NAME switcher_panel COMMAND test_switcher_panel)
+    set_tests_properties(switcher_panel PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
+    )
+endif()

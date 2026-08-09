@@ -2,7 +2,7 @@
 
 > 文档定位：当前代码事实基线、接手维护手册和后续功能清单
 > 基线日期：2026-08-09
-> 代码版本：`0.2.0`（提交 `1fbf62f`）
+> 代码版本：`0.2.0` + 2026-08-09 Windows UI 优化基线（以本文件所在提交为准）
 > 主要验证环境：Windows 11、Qt 6.8.0、MSVC 2022、CMake 3.16+
 
 ## 1. 结论摘要
@@ -11,12 +11,12 @@
 
 当前最准确的项目判断是：
 
-- Windows 版已经形成可日常试用的主流程，但缩略图兼容性、界面细节、危险操作保护和自动化测试仍不足。
+- Windows 版已经形成可日常试用的主流程；本轮补齐了深色标题栏、安全尺寸、缩略图不可用占位、空状态、筛选横向滚动、长标签省略、分组数量层级和首批自动化 UI 测试。缩略图兼容性及关闭结果同步仍需持续完善。
 - macOS 和 Linux 代码可以提供基础窗口枚举能力，但全局热键、图标、关闭窗口等关键能力没有闭环；当前 CI 也没有验证这两个平台。
 - Wayland 受平台安全模型限制，不应承诺与 Windows 相同的跨应用观察和控制能力。
 - 仓库已有较多规划文档，但部分“当前状态”仍停留在 v0.2 实现之前。维护时应以本文件、代码和测试结果为准，以旧文档作为历史设计输入。
 
-建议下一阶段先做“Windows 稳定性与可维护性版本”，优先补自动化测试、缩略图降级、关闭确认/结果同步、CI 与文档一致性，再进行大规模视觉改版或跨平台深度扩展。
+建议下一阶段先做“Windows 稳定性与可维护性版本”，优先补自动化测试、缩略图降级、关闭结果同步与失败反馈、CI 与文档一致性，再进行大规模视觉改版或跨平台深度扩展。
 
 ## 2. 当前功能状态
 
@@ -32,7 +32,7 @@
 | 窗口搜索 | 匹配应用名、窗口标题、文件夹路径，不区分大小写 | `src/core/WindowModel.cpp`、`src/ui/SwitcherPanel.cpp` |
 | MRU 排序 | 应用级记录持久化，窗口级记录仅在本次进程中保存；可在设置关闭 | `src/core/Config.cpp`、`src/app/Application.cpp` |
 | 窗口激活 | Windows 下恢复最小化窗口并尝试置前 | `src/platform/windows/WinWindowSource.cpp` |
-| 关闭窗口/整组 | Windows 下发送 `WM_CLOSE` | `src/platform/windows/WinWindowSource.cpp` |
+| 关闭窗口/整组 | Windows 下发送 `WM_CLOSE`；整组关闭直接执行，不弹确认框 | `src/platform/windows/WinWindowSource.cpp`、`src/ui/SwitcherPanel.cpp` |
 | 图标抓取 | 优先从 exe 获取大图标，再回退窗口类图标 | `src/platform/windows/WinWindowSource.cpp` |
 | 缩略图抓取 | `PrintWindow(PW_RENDERFULLCONTENT)`，裁剪 DWM 边框，检测空白/截断并缩放 | `src/platform/windows/WinWindowSource.cpp` |
 | Explorer 路径 | 通过 `IShellWindows` 读取资源管理器窗口路径并用于搜索、显示和排序 | `src/platform/windows/WinExplorerPaths.cpp` |
@@ -42,6 +42,15 @@
 | 平台诊断 | 显示版本、平台、会话、能力等级、配置/日志路径 | `src/platform/PlatformCapabilities.h`、`src/ui/SettingsDialog.cpp` |
 | 中英文 | 根据系统或配置选择中文/英文 | `src/core/I18n.*` |
 | 日志 | Qt 全局消息处理器追加写入 `app.log` | `src/core/AppLog.cpp` |
+| Windows 深色标题栏 | Windows 11 通过 DWM 沉浸式深色属性匹配深色面板，并兼容旧属性号回退 | `src/ui/MainWindow.cpp` |
+| 面板安全尺寸 | 根据工作区上限计算面板尺寸并保留边距，避免低分辨率下越界 | `src/ui/UiSizing.*`、`src/ui/MainWindow.cpp` |
+| 缩略图降级 | 无缩略图时显示应用图标及“预览不可用”占位文案 | `src/ui/WindowCard.cpp`、`src/core/I18n.*` |
+| 空状态/无搜索结果 | 明确展示“没有可切换窗口”或“没有匹配结果”及提示 | `src/ui/SwitcherPanel.cpp`、`src/core/I18n.*` |
+| 筛选横向滚动 | 顶部筛选项溢出时可横向滚动；兼容触控板像素增量和非整格滚轮增量，并保留原生水平滚动 | `src/ui/SwitcherPanel.cpp` |
+| 长筛选标签 | 过长应用名限制宽度并省略显示，完整名称保留在工具提示中 | `src/ui/SwitcherPanel.cpp` |
+| 分组标题层级 | 应用名与窗口数量使用独立标签和不同视觉层级 | `src/ui/SwitcherPanel.cpp`、`resources/styles/app.qss` |
+| 自动化 UI 测试 | Qt Test 覆盖安全尺寸、空状态、筛选滚动和整组关闭动作；当前 CTest 共 2 项 | `tests/test_ui_sizing.cpp`、`tests/test_switcher_panel.cpp` |
+| Qt 本地运行时部署 | Windows Debug/Release 构建后自动用 `windeployqt` 将 Qt DLL 部署到 EXE 输出目录、平台插件部署到其子目录；分发时保留完整部署目录树 | `CMakeLists.txt`、`tests/verify_windows_deployment.ps1` |
 
 ### 2.2 部分实现或有明显限制
 
@@ -49,7 +58,7 @@
 |---|---|
 | Windows 缩略图 | 最小化窗口直接放弃；Chromium、UWP、硬件加速或受保护窗口可能返回空白/不完整内容；截图中的多个窗口因此只显示小图标。诊断页当前标为“完整支持”过于乐观。 |
 | 窗口激活 | Windows 的前台激活受系统焦点策略、权限级别和目标进程状态影响，接口没有返回成功/失败结果。 |
-| 关闭窗口 | `WM_CLOSE` 是请求而非保证；应用可以拒绝、弹出保存提示或延迟关闭。当前 UI 会立即移除卡片，可能与真实状态不一致。 |
+| 关闭窗口/整组 | `WM_CLOSE` 是请求而非保证；应用可以拒绝、弹出保存提示或延迟关闭。整组关闭按产品约定直接执行、不要求确认；当前 UI 仍会乐观移除卡片，尚缺真实关闭结果同步和失败反馈。 |
 | MRU | 应用 MRU 最多保留 50 条并持久化；窗口 MRU 以 HWND 为键，仅存在内存中，重启丢失。 |
 | 多屏 | 仅按鼠标所在屏幕定位；没有“前台窗口所在屏幕/固定屏幕/记忆上次屏幕”策略。 |
 | 配置 | `panel_width` 和 `panel_height` 已持久化，但设置页没有编辑入口；读取时缺少类型、范围和枚举值的严格校验。 |
@@ -58,9 +67,9 @@
 | Linux X11 | 可枚举、激活、关闭和抓取部分缩略图，但全局热键与图标未实现。 |
 | Wayland | 全局窗口枚举、热键、缩略图、激活和关闭通常不可用。 |
 
-### 2.3 未实现的工程能力
+### 2.3 未实现或尚不完整的工程能力
 
-- 自动化单元测试、集成测试和 UI 测试；当前 `ctest -N` 显示 `Total Tests: 0`。
+- 自动化测试已建立最小基线：`ui_sizing` 与 `switcher_panel` 两个 Qt Test 目标；仍缺 Config、WindowModel、平台层和端到端 UI 自动化覆盖。
 - 崩溃报告、日志轮转、诊断信息复制/导出。
 - 无障碍语义、完整键盘焦点可视化、高 DPI/缩放矩阵验证。
 - 自动更新、开机启动、安装器、卸载清理和正式签名。
@@ -79,31 +88,41 @@
 - 缩略图分批加载，先显示结构再补纹理，避免一次性处理全部窗口。
 - 应用组支持置顶和整组关闭，窗口多时有实际管理价值。
 
-### 3.2 需要完善的界面问题
+### 3.2 本轮已完成的界面改进
+
+下列项目已在 2026-08-09 的 Windows UI 优化中实现，并由自动化测试或构建检查覆盖：
+
+| 项目 | 已实施行为 | 验证方式 |
+|---|---|---|
+| 深色标题栏 | Windows 11 使用沉浸式深色标题栏，保留兼容属性号回退 | Debug/Release 构建；代码静态检查 |
+| 低分辨率安全尺寸 | 面板宽高受当前屏幕可用区域限制，并保留边距 | `ui_sizing` Qt Test |
+| 缩略图不可用占位 | 抓图不可用时显示应用图标与状态文案，避免大面积无意义黑底 | `switcher_panel` Qt Test；代码静态检查 |
+| 空状态和无搜索结果 | 内容区分别展示空窗口和无匹配提示 | `switcher_panel` Qt Test |
+| 筛选区横向滚动 | 筛选项过多时支持横向滚动，触控板像素增量、非整格纵向滚轮和原生水平滚动均有处理 | `switcher_panel` Qt Test |
+| 长筛选标签 | 标签限制最大宽度并省略，工具提示保留完整应用名 | `switcher_panel` Qt Test |
+| 分组数量层级 | 应用名与窗口数量拆为 `GroupTitle`、`GroupCount`，分别设定主次样式 | `switcher_panel` Qt Test；代码静态检查 |
+
+### 3.3 仍需完善的界面问题
 
 | 优先级 | 现象 | 原因判断 | 建议 |
 |---|---|---|---|
-| P0 | 多个卡片只有居中的 48px 小图标，大面积黑底 | 缩略图为空时只有图标回退，没有状态说明或更合适的版式 | 增加“缩略图不可用/窗口已最小化”占位；图标回退时使用紧凑卡片或更大的图标与应用色背景 |
-| P0 | “关闭整组”与普通筛选操作混在顶部和组头，误触成本高 | 危险操作没有确认，也没有等待真实关闭结果 | 整组关闭增加确认、窗口数提示和失败反馈；筛选 chip 的 `×` 可改为菜单或仅悬停显示 |
-| P1 | 原生浅色标题栏与深色内容明显割裂 | 使用标准 Windows 标题栏，未设置沉浸式深色标题栏 | Windows 11 下调用 DWM 深色标题栏；或经过可访问性验证后采用自绘标题栏 |
-| P1 | 面板在低分辨率屏幕上几乎占满可用区域 | 默认宽 960、高 600，同时自适应尺寸使用 `qMax`，只会放大不会缩小 | 按可用区域设置上限并保留边距；配置值先做范围约束；支持紧凑模式 |
-| P1 | 顶部筛选项较多时横向拥挤，最后一项容易被截断 | 固定高度横向滚动区，筛选项内又包含关闭按钮 | 增加左右滚动提示/鼠标滚轮横移；长列表改为可搜索下拉或“更多”菜单 |
+| P0 | 关闭整组后卡片可能与真实窗口状态不一致 | 关闭请求不等待窗口销毁或拒绝结果 | 整组关闭保持直接执行；增加关闭结果同步、失败反馈和延迟重枚举。筛选 chip 的 `×` 可改为菜单或仅悬停显示 |
 | P1 | 组操作按钮远离组标题，在宽窗口上关系较弱 | 头部布局把操作推到最右侧 | 将操作收进组标题右侧菜单，或限制内容最大宽度 |
 | P1 | 键盘上下移动与卡片实际换行布局不一致 | 模型不知道每行卡片数，`moveSelection` 只按线性窗口序列移动 | UI 根据列数计算二维导航，或使用真正的网格/列表视图模型 |
-| P2 | 没有搜索无结果、窗口为空、加载中和抓图失败状态 | 内容区只重建分组，没有 empty/loading/error 组件 | 增加统一状态页和可操作提示 |
+| P2 | 尚无加载中和操作失败状态 | 空状态、无搜索结果与缩略图不可用已实现，但缺枚举/抓图加载进度及关闭/激活失败提示 | 增加统一的 loading、pending、error 状态页和可操作提示 |
 | P2 | 标题截断后只能悬停查看，窗口之间不易区分 | 固定 210px 单行标题 | 搜索结果高亮；允许两行标题；对相同标题增加路径/进程辅助信息 |
 | P2 | 控件密度、字号和 Windows 11 原生观感仍偏“工具原型” | QSS 是固定像素样式，缺少设计 token 和 DPI 验证 | 抽出颜色、间距、圆角、字号规范；覆盖 100%/125%/150%/200% 缩放 |
 
-### 3.3 建议的面板状态模型
+### 3.4 建议的面板状态模型
 
 后续 UI 不应只区分“有卡片/无卡片”，建议统一为：
 
-1. `LoadingWindows`：正在枚举窗口。
+1. `LoadingWindows`：正在枚举窗口（待实现可见加载状态）。
 2. `Ready`：窗口结构已显示，纹理可继续异步更新。
-3. `Empty`：没有可切换窗口。
-4. `NoSearchResult`：搜索没有匹配项，保留清除搜索入口。
-5. `ThumbnailUnavailable`：单个窗口无法抓图，说明原因或提供稳定占位。
-6. `ActionPending/ActionFailed`：关闭或激活请求正在处理/失败。
+3. `Empty`：没有可切换窗口（已实现）。
+4. `NoSearchResult`：搜索没有匹配项，保留清除搜索入口（已实现）。
+5. `ThumbnailUnavailable`：单个窗口无法抓图，提供稳定占位（已实现）。
+6. `ActionPending/ActionFailed`：关闭或激活请求正在处理/失败（待实现；整组关闭不应增加确认步骤）。
 
 ## 4. 架构与运行流程
 
@@ -194,11 +213,19 @@ cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
 cmake --build build --config Release --parallel
 ```
 
-2026-08-09 已在当前工作区验证 Release 构建成功，输出为 `build/Release/mySwitcher.exe`。
+Windows 构建会在 `mySwitcher` 链接完成后自动调用 Qt 安装目录中的 `windeployqt`。所需 Qt DLL 部署到 `build/<配置>/`（与 EXE 同级），平台插件（包括 `qwindows`）部署到 `build/<配置>/platforms/` 等子目录。分发或移动构建产物时必须保留整个 `build/<配置>/` 部署目录树，不能只复制 `mySwitcher.exe`；这样在未安装 Qt 的机器上直接运行时才不会因缺少 Qt DLL 或平台插件立即失败。
+
+部署检查命令：
+
+```powershell
+.\tests\verify_windows_deployment.ps1 -ExePath .\build\Release\mySwitcher.exe -Configuration Release
+```
+
+2026-08-09 已在当前工作区验证 Debug 和 Release 构建成功；Release 输出为 `build/Release/mySwitcher.exe`。
 
 ### 6.2 自动化现状
 
-- `CMakeLists.txt` 没有 `enable_testing()` 或测试目标。
+- `CMakeLists.txt` 已启用 CTest，当前有 `ui_sizing` 与 `switcher_panel` 两个 Qt Test 目标。
 - GitHub Actions 当前只在 `windows-latest` 构建和打包。
 - tag `v*` 会创建 GitHub Release，上传 Windows zip。
 - README 中“Windows/macOS/Linux 三端自动编译”和三种包名的说明已经过时，需要与工作流统一。
@@ -220,14 +247,14 @@ cmake --build build --config Release --parallel
 
 ### P0：发布前必须处理
 
-1. **建立测试基线**
-   为 `Config`、`buildGroups/AppState`、搜索、置顶、排除、MRU 和导入校验增加 Qt Test 单元测试；把测试接入 CMake 和 CI。
+1. **扩展测试基线**
+   当前已有安全尺寸和 `SwitcherPanel` 的两项 Qt Test；后续为 `Config`、`buildGroups/AppState`、搜索、置顶、排除、MRU 和导入校验增加测试，并接入 CI。
 
 2. **修正缩略图能力与降级**
    Windows 诊断页应标为“部分支持”；为最小化、抓取失败和不支持的窗口提供可解释占位；记录失败分类，避免把平台限制当崩溃修复。
 
 3. **关闭操作与真实状态同步**
-   整组关闭必须确认。发送 `WM_CLOSE` 后重新枚举或等待窗口销毁事件；被拒绝/延迟的窗口不能永久从 UI 假删除。
+   整组关闭直接执行，不增加确认。发送 `WM_CLOSE` 后重新枚举或等待窗口销毁事件；被拒绝/延迟的窗口不能永久从 UI 假删除，并需要提供失败反馈。
 
 4. **配置可靠写入与校验**
    使用原子写入，约束面板尺寸和语言枚举，处理损坏配置并保留可恢复备份。
@@ -239,8 +266,8 @@ cmake --build build --config Release --parallel
 
 1. 将纹理抓取移出 UI 主线程，支持取消、超时、结果版本校验和安全退出。
 2. 解决 HWND 重用与缓存陈旧：缓存键至少关联进程 ID/创建上下文，缩略图按时间或激活事件刷新。
-3. 增加空状态、加载状态、抓图失败状态和操作失败反馈。
-4. 改进低分辨率与高 DPI 布局，面板始终保留屏幕边距。
+3. 增加加载状态、抓图失败细分状态和操作失败反馈。
+4. 完成 100%/125%/150%/200% 的高 DPI 布局人工矩阵，并按发现的问题调整尺寸策略。
 5. 修正二维键盘导航，使上下左右与视觉网格一致。
 6. 第二实例通过本地 IPC 唤醒已有实例，而不是只弹提示。
 7. 日志轮转和一键导出诊断包。
@@ -248,7 +275,7 @@ cmake --build build --config Release --parallel
 
 ### P2：体验与产品化
 
-1. Windows 深色标题栏、统一应用图标和托盘图标。
+1. 统一应用图标和托盘图标。
 2. 窗口右键/更多菜单：最小化、最大化、移动到屏幕、结束任务（需明确危险等级）。
 3. 可配置面板尺寸、紧凑模式、缩略图大小和显示屏策略。
 4. 搜索结果高亮、模糊匹配、拼音首字母和最近搜索；先验证性能再扩展。
@@ -268,7 +295,7 @@ cmake --build build --config Release --parallel
 ### v0.2.1：稳定性与事实校准
 
 - P0 全部项目。
-- Windows 缩略图降级和关闭确认。
+- Windows 缩略图降级、关闭结果同步与失败反馈。
 - README、诊断能力等级、CI 产物说明同步。
 - 建立首批 core 单元测试。
 
@@ -277,8 +304,8 @@ cmake --build build --config Release --parallel
 ### v0.3：Windows 体验完善
 
 - 异步可取消纹理管线和缓存刷新策略。
-- DPI/多屏/低分辨率布局完善。
-- 深色标题栏、状态页、网格导航、诊断包。
+- DPI/多屏布局人工验证与完善。
+- 加载/失败状态页、网格导航、诊断包。
 - 第二实例唤醒已有实例。
 
 完成标准：Windows 11 主流程在常见应用、屏幕组合和缩放比例下稳定，可用于正式 beta。
@@ -367,14 +394,28 @@ cmake --build build --config Release --parallel
 
 ## 13. 当前基线验证记录
 
-在 2026-08-09、Windows 11 环境执行：
+在 2026-08-09、Windows 11、Qt 6.8.0、MSVC 2022 环境执行了以下**简化验证**：
 
 ```text
-cmake --build build --config Release --parallel
-结果：成功生成 build/Release/mySwitcher.exe
+cmake -S . -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
+结果：配置成功
 
-ctest --test-dir build -C Release -N
-结果：Total Tests: 0
+cmake --build build --config Debug --parallel
+ctest --test-dir build -C Debug --output-on-failure
+结果：构建成功；ui_sizing、switcher_panel 共 2/2 通过
+
+cmake --build build --config Release --parallel
+ctest --test-dir build -C Release --output-on-failure
+结果：构建成功；ui_sizing、switcher_panel 共 2/2 通过；生成 build/Release/mySwitcher.exe
+
+.\tests\verify_windows_deployment.ps1 -ExePath .\build\Debug\mySwitcher.exe -Configuration Debug
+.\tests\verify_windows_deployment.ps1 -ExePath .\build\Release\mySwitcher.exe -Configuration Release
+结果：Debug/Release 所需 Qt DLL 位于 EXE 输出目录；`platforms/qwindows` 插件位于 `platforms/` 子目录；完整部署目录树检查通过
+
+从进程 PATH 移除 C:\Qt\6.8.0\msvc2022_64\bin 后短时启动 Release EXE
+结果：进程在 1.5 秒检查点仍存活，未因缺失 Qt DLL 立即退出；随后由验证脚本终止
 ```
 
-本次新增维护基线并更新文档索引，没有修改程序代码、构建配置或历史规划内容。
+本轮按用户要求未执行完整人工显示矩阵。以下项目仍待人工验证，且不能据此记录为已通过：1280×720/1920×1080、100%/125%/150% DPI、深色标题栏视觉效果、四种预览状态、空状态与长筛选项、键盘/关闭/置顶交互，以及 30 次快速显示/隐藏压力场景。
+
+本次维护基线记录了已完成的 Windows UI 优化、自动化测试、Qt 运行时部署和仍待完成的功能类别；没有把“整组关闭确认”列为待办，整组关闭保持直接执行。

@@ -13,6 +13,7 @@ WindowCard::WindowCard(
     const WindowItem &item,
     const QPixmap &icon,
     const QPixmap &thumbnail,
+    bool thumbnailsEnabled,
     bool selected,
     I18n i18n,
     QWidget *parent)
@@ -37,15 +38,38 @@ WindowCard::WindowCard(
     thumbGrid->setContentsMargins(0, 0, 0, 0);
     thumbGrid->setSpacing(0);
 
-    auto *thumbLabel = new QLabel;
+    auto *thumbLabel = new QLabel(thumbBox);
+    thumbLabel->setObjectName(QStringLiteral("ThumbnailImage"));
     thumbLabel->setAlignment(Qt::AlignCenter);
-    thumbLabel->setScaledContents(false);
     if (!thumbnail.isNull()) {
-        thumbLabel->setPixmap(thumbnail.scaled(210, 118, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
-    } else if (!icon.isNull()) {
-        thumbLabel->setPixmap(icon.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        thumbLabel->setPixmap(thumbnail.scaled(
+            210, 118, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+        thumbGrid->addWidget(thumbLabel, 0, 0);
+    } else {
+        auto *fallback = new QWidget;
+        fallback->setObjectName(QStringLiteral("ThumbnailFallback"));
+        auto *fallbackLayout = new QVBoxLayout(fallback);
+        fallbackLayout->setAlignment(Qt::AlignCenter);
+        fallbackLayout->setSpacing(6);
+
+        auto *glyph = new QLabel;
+        glyph->setObjectName(QStringLiteral("ThumbnailFallbackGlyph"));
+        glyph->setAlignment(Qt::AlignCenter);
+        if (icon.isNull()) {
+            glyph->setText(QStringLiteral("▣"));
+        } else {
+            glyph->setPixmap(icon.scaled(60, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        }
+        fallbackLayout->addWidget(glyph);
+
+        if (thumbnailsEnabled) {
+            auto *status = new QLabel(i18n.previewUnavailable());
+            status->setObjectName(QStringLiteral("ThumbnailStatus"));
+            status->setAlignment(Qt::AlignCenter);
+            fallbackLayout->addWidget(status);
+        }
+        thumbGrid->addWidget(fallback, 0, 0);
     }
-    thumbGrid->addWidget(thumbLabel, 0, 0);
 
     auto *closeBar = new QWidget(thumbBox);
     closeBar->setAttribute(Qt::WA_TransparentForMouseEvents, false);
