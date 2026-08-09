@@ -38,7 +38,7 @@ WindowCard::WindowCard(
     thumbGrid->setContentsMargins(0, 0, 0, 0);
     thumbGrid->setSpacing(0);
 
-    auto *thumbLabel = new QLabel;
+    auto *thumbLabel = new QLabel(thumbBox);
     thumbLabel->setObjectName(QStringLiteral("ThumbnailImage"));
     thumbLabel->setAlignment(Qt::AlignCenter);
     if (!thumbnail.isNull()) {

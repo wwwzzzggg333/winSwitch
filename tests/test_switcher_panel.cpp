@@ -1,6 +1,7 @@
 #include "ui/WindowCard.h"
 
 #include <QLabel>
+#include <QPointer>
 #include <QTest>
 
 namespace {
@@ -38,6 +39,16 @@ private slots:
     void usesGenericFallbackWhenNoTextureExists() {
         WindowCard card(sampleItem(), {}, {}, true, false, zhI18n());
         QVERIFY(card.findChild<QLabel *>(QStringLiteral("ThumbnailFallbackGlyph")) != nullptr);
+    }
+
+    void ownsThumbnailImageLabelWhenFallbackIsRendered() {
+        QPointer<QLabel> image;
+        {
+            WindowCard card(sampleItem(), {}, {}, true, false, zhI18n());
+            image = card.findChild<QLabel *>(QStringLiteral("ThumbnailImage"));
+            QVERIFY(image != nullptr);
+        }
+        QVERIFY(image.isNull());
     }
 };
 
