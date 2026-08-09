@@ -83,8 +83,10 @@ if(WIN32)
     find_program(WINDEPLOYQT_EXECUTABLE
         NAMES windeployqt
         HINTS "${QT_BIN_DIR}"
-        REQUIRED
     )
+    if(NOT WINDEPLOYQT_EXECUTABLE)
+        message(FATAL_ERROR "Could not find windeployqt in the Qt bin directory: ${QT_BIN_DIR}")
+    endif()
     add_custom_command(TARGET mySwitcher POST_BUILD
         COMMAND "${WINDEPLOYQT_EXECUTABLE}"
             --$<IF:$<CONFIG:Debug>,debug,release>
