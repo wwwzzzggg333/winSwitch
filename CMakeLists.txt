@@ -7,7 +7,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Test)
+include(CTest)
 
 set(CORE_SOURCES
     src/core/Config.cpp
@@ -24,6 +25,7 @@ set(APP_SOURCES
 
 set(UI_SOURCES
     src/ui/MainWindow.cpp
+    src/ui/UiSizing.cpp
     src/ui/SwitcherPanel.cpp
     src/ui/WindowCard.cpp
     src/ui/SettingsDialog.cpp
@@ -118,3 +120,16 @@ install(TARGETS mySwitcher
     RUNTIME DESTINATION bin
     BUNDLE DESTINATION .
 )
+
+if(BUILD_TESTING)
+    qt_add_executable(test_ui_sizing
+        tests/test_ui_sizing.cpp
+        src/ui/UiSizing.cpp
+    )
+    target_include_directories(test_ui_sizing PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(test_ui_sizing PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME ui_sizing COMMAND test_ui_sizing)
+    set_tests_properties(ui_sizing PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
+    )
+endif()

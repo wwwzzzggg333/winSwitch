@@ -1,6 +1,7 @@
 #include "ui/MainWindow.h"
 #include "ui/SettingsDialog.h"
 #include "ui/SwitcherPanel.h"
+#include "ui/UiSizing.h"
 
 #include "core/AppLog.h"
 
@@ -79,11 +80,11 @@ QScreen *MainWindow::targetScreen() const {
 
 QSize MainWindow::panelSize() const {
     QScreen *screen = targetScreen();
-    const QSize monitor = screen ? screen->availableGeometry().size() : QSize(1920, 1080);
-    const int autoW = qBound(840, static_cast<int>(monitor.width() * 0.70), 1280);
-    const int autoH = qBound(540, static_cast<int>(monitor.height() * 0.62), 820);
-    return QSize(qMax(static_cast<int>(m_config.panelWidth), autoW),
-                 qMax(static_cast<int>(m_config.panelHeight), autoH));
+    const QSize available = screen ? screen->availableGeometry().size() : QSize(1920, 1080);
+    const QSize configured(
+        qMax(1, static_cast<int>(m_config.panelWidth)),
+        qMax(1, static_cast<int>(m_config.panelHeight)));
+    return calculatePanelSize(available, configured);
 }
 
 void MainWindow::centerOnScreen() {
