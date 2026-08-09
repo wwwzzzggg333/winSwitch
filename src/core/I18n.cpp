@@ -69,6 +69,12 @@ QString I18n::closeWindowTooltip() const {
     return m_locale == Locale::Zh ? QStringLiteral("关闭窗口") : QStringLiteral("Close window");
 }
 
+QString I18n::previewUnavailable() const {
+    return m_locale == Locale::Zh
+        ? QStringLiteral("窗口预览不可用")
+        : QStringLiteral("Preview unavailable");
+}
+
 QString I18n::windowCount(int count) const {
     return QStringLiteral("(%1)").arg(count);
 }

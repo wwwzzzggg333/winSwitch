@@ -152,4 +152,17 @@ if(BUILD_TESTING)
     set_tests_properties(ui_sizing PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
     )
+
+    qt_add_executable(test_switcher_panel
+        tests/test_switcher_panel.cpp
+        src/ui/WindowCard.cpp
+        src/core/I18n.cpp
+        src/core/Config.cpp
+    )
+    target_include_directories(test_switcher_panel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(test_switcher_panel PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+    add_test(NAME switcher_panel COMMAND test_switcher_panel)
+    set_tests_properties(switcher_panel PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
+    )
 endif()

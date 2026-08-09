@@ -253,6 +253,7 @@ void SwitcherPanel::rebuildContent() {
                 item,
                 m_icons.value(item.windowId),
                 m_showThumbnails ? m_thumbs.value(item.windowId) : QPixmap(),
+                m_showThumbnails,
                 selected,
                 m_i18n);
             connect(card, &WindowCard::activateRequested, this, [this, item]() {
