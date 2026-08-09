@@ -2,7 +2,7 @@
 
 [![Build and Release](https://github.com/wwwzzzggg333/winSwitch/actions/workflows/build.yml/badge.svg)](https://github.com/wwwzzzggg333/winSwitch/actions/workflows/build.yml)
 
-跨平台窗口切换管理器（C++ / Qt 6），功能对标 [WindowsSwitchEx](../WindowsSwitchEx/README.md)：
+跨平台窗口切换管理器（C++ / Qt 6）：
 
 - 全局快捷键唤出/隐藏切换面板
 - 按应用程序分组展示窗口
@@ -34,17 +34,17 @@ cmake --build build --config Release
 Windows 示例：
 
 ```powershell
-cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.7.0\msvc2019_64"
+cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
 cmake --build build --config Release
 ```
 
 ### GitHub Actions 自动构建
 
-推送到 `main` / `master` 分支后，会在 **Windows / macOS / Linux** 三端自动编译，并打包为 zip。构建产物可在 Actions 页面的 **Artifacts** 中下载：
+推送到 `main` / `master` 分支后，会在 **Windows** 上自动编译，并打包为 zip。构建产物可在 Actions 页面的 **Artifacts** 中下载：
 
 - `package-winSwitch-windows-x64.zip`（含 Qt 运行库，可直接运行）
-- `package-winSwitch-macos-arm64.zip`（`.app` 包）
-- `package-winSwitch-linux-x64.zip`（含 `run.sh` 启动脚本与 Qt 库）
+
+> 历史版本曾在 Windows / macOS / Linux 三端构建；当前 workflow 仅保留 Windows。
 
 ### 发布 Release
 
@@ -61,7 +61,7 @@ Release 页面：`https://github.com/wwwzzzggg333/winSwitch/releases`
 
 配置文件：`config.json`（与 exe 同目录，或 `%APPDATA%/winSwitch/` / `~/.config/winSwitch/`）。
 
-字段：`hotkey`、`thumbnail`、`panel_width`、`panel_height`、`language`（auto/zh/en）、`pinned`、`excluded`。
+字段：`hotkey`、`thumbnail`、`panel_width`、`panel_height`、`language`（auto/zh/en）、`mru_enabled`、`pinned`、`excluded`。
 
 修改快捷键或语言后需重启。
 
@@ -79,7 +79,7 @@ src/
 
 - 配置格式为 JSON（非 TOML）
 - macOS / Linux 的「关闭窗口」「Finder/Explorer 路径排序」等功能仍在完善中
-- 分发需携带 Qt 运行库；Release 包已由 CI 通过 `windeployqt` / `macdeployqt` 打包
+- 分发需携带 Qt 运行库；Windows Release 包已由 CI 通过 `windeployqt` 打包
 
 ## 已知限制
 
