@@ -17,6 +17,30 @@
 #include <QScreen>
 #include <QTimer>
 
+#if defined(Q_OS_WIN)
+#include <dwmapi.h>
+#include <windows.h>
+#endif
+
+namespace {
+#if defined(Q_OS_WIN)
+bool applyWindowsDarkTitleBar(QWidget *window) {
+    if (!window) {
+        return false;
+    }
+    const HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    const BOOL enabled = TRUE;
+    constexpr DWORD currentAttribute = 20;
+    HRESULT result = DwmSetWindowAttribute(hwnd, currentAttribute, &enabled, sizeof(enabled));
+    if (FAILED(result)) {
+        constexpr DWORD legacyAttribute = 19;
+        result = DwmSetWindowAttribute(hwnd, legacyAttribute, &enabled, sizeof(enabled));
+    }
+    return SUCCEEDED(result);
+}
+#endif
+} // namespace
+
 MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     : QMainWindow(parent), m_config(config), m_i18n(i18n) {
     setWindowTitle(m_i18n.appTitle());
@@ -64,6 +88,12 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     });
 
     qApp->installEventFilter(this);
+
+#if defined(Q_OS_WIN)
+    if (!applyWindowsDarkTitleBar(this)) {
+        AppLog::warn(QStringLiteral("Windows dark title bar is unavailable"));
+    }
+#endif
 }
 
 bool MainWindow::isPanelVisible() const {
