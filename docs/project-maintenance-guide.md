@@ -2,7 +2,7 @@
 
 > 文档定位：当前代码事实基线、接手维护手册和后续功能清单
 > 基线日期：2026-08-09
-> 代码版本：`0.2.0` + Windows UI 优化（当前功能分支）
+> 代码版本：`0.2.0` + 2026-08-09 Windows UI 优化基线（变更集 `59c953b..8daabfd`）
 > 主要验证环境：Windows 11、Qt 6.8.0、MSVC 2022、CMake 3.16+
 
 ## 1. 结论摘要
@@ -48,7 +48,7 @@
 | 空状态/无搜索结果 | 明确展示“没有可切换窗口”或“没有匹配结果”及提示 | `src/ui/SwitcherPanel.cpp`、`src/core/I18n.*` |
 | 筛选横向滚动 | 顶部筛选项溢出时可横向滚动；鼠标纵向滚轮映射为横向移动 | `src/ui/SwitcherPanel.cpp` |
 | 自动化 UI 测试 | Qt Test 覆盖安全尺寸、空状态、筛选滚动和整组关闭动作；当前 CTest 共 2 项 | `tests/test_ui_sizing.cpp`、`tests/test_switcher_panel.cpp` |
-| Qt 本地运行时部署 | Windows Debug/Release 构建后自动用 `windeployqt` 将 Qt DLL 与插件部署到 EXE 同目录 | `CMakeLists.txt`、`tests/verify_windows_deployment.ps1` |
+| Qt 本地运行时部署 | Windows Debug/Release 构建后自动用 `windeployqt` 将 Qt DLL 部署到 EXE 输出目录、平台插件部署到其子目录；分发时保留完整部署目录树 | `CMakeLists.txt`、`tests/verify_windows_deployment.ps1` |
 
 ### 2.2 部分实现或有明显限制
 
@@ -209,7 +209,7 @@ cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
 cmake --build build --config Release --parallel
 ```
 
-Windows 构建会在 `mySwitcher` 链接完成后自动调用 Qt 安装目录中的 `windeployqt`，将所需 Qt DLL 和插件复制到 `build/<配置>/mySwitcher.exe` 同目录。这样将构建目录中的 EXE 交给未安装 Qt 的机器或直接双击运行时，不会再因缺少 Qt DLL 立即失败。
+Windows 构建会在 `mySwitcher` 链接完成后自动调用 Qt 安装目录中的 `windeployqt`。所需 Qt DLL 部署到 `build/<配置>/`（与 EXE 同级），平台插件（包括 `qwindows`）部署到 `build/<配置>/platforms/` 等子目录。分发或移动构建产物时必须保留整个 `build/<配置>/` 部署目录树，不能只复制 `mySwitcher.exe`；这样在未安装 Qt 的机器上直接运行时才不会因缺少 Qt DLL 或平台插件立即失败。
 
 部署检查命令：
 
@@ -406,7 +406,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 .\tests\verify_windows_deployment.ps1 -ExePath .\build\Debug\mySwitcher.exe -Configuration Debug
 .\tests\verify_windows_deployment.ps1 -ExePath .\build\Release\mySwitcher.exe -Configuration Release
-结果：Debug/Release 所需 Qt DLL 和 platforms/qwindows 插件均在 EXE 同目录
+结果：Debug/Release 所需 Qt DLL 位于 EXE 输出目录；`platforms/qwindows` 插件位于 `platforms/` 子目录；完整部署目录树检查通过
 
 从进程 PATH 移除 C:\Qt\6.8.0\msvc2022_64\bin 后短时启动 Release EXE
 结果：进程在 1.5 秒检查点仍存活，未因缺失 Qt DLL 立即退出；随后由验证脚本终止
