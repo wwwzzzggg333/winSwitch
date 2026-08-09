@@ -678,6 +678,120 @@ Expected: Release succeeds, every registered test passes, and only intentionally
 
 ---
 
+### Task 7: Deploy Qt Runtime Beside Windows Build Outputs
+
+**Execution order:** Run this task immediately after Task 2, before Task 3.
+
+**Files:**
+- Create: `tests/verify_windows_deployment.ps1`
+- Modify: `CMakeLists.txt`
+
+**Interfaces:**
+- Consumes: the `windeployqt` executable belonging to the discovered Qt 6 installation.
+- Produces: Debug and Release output directories containing the matching Qt Core/Gui/Widgets DLLs and `platforms/qwindows*.dll`.
+- Existing CI packaging remains valid; its later `windeployqt` invocation may safely refresh the copied package.
+
+- [ ] **Step 1: Write the failing deployment verification script**
+
+Create `tests/verify_windows_deployment.ps1`:
+
+```powershell
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$ExePath,
+    [ValidateSet('Debug', 'Release')]
+    [string]$Configuration
+)
+
+$resolvedExe = (Resolve-Path -LiteralPath $ExePath).Path
+$outputDir = Split-Path -Parent $resolvedExe
+$suffix = if ($Configuration -eq 'Debug') { 'd' } else { '' }
+$required = @(
+    "Qt6Core$suffix.dll",
+    "Qt6Gui$suffix.dll",
+    "Qt6Widgets$suffix.dll",
+    "platforms/qwindows$suffix.dll"
+)
+$missing = @($required | Where-Object {
+    -not (Test-Path -LiteralPath (Join-Path $outputDir $_))
+})
+if ($missing.Count -gt 0) {
+    throw "Missing deployed Qt runtime files: $($missing -join ', ')"
+}
+Write-Output "Qt runtime deployment verified for $Configuration at $outputDir"
+```
+
+- [ ] **Step 2: Run the script against the current Debug output and verify RED**
+
+```powershell
+pwsh -NoProfile -File tests/verify_windows_deployment.ps1 `
+  -ExePath build/Debug/mySwitcher.exe -Configuration Debug
+```
+
+Expected: FAIL listing `Qt6Cored.dll`, `Qt6Guid.dll`, `Qt6Widgetsd.dll`, and `platforms/qwindowsd.dll` as missing.
+
+- [ ] **Step 3: Add one Windows post-build deployment command**
+
+After `qt_add_executable(mySwitcher ...)`, add:
+
+```cmake
+if(WIN32)
+    get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
+    find_program(WINDEPLOYQT_EXECUTABLE
+        NAMES windeployqt
+        HINTS "${QT_BIN_DIR}"
+        REQUIRED
+    )
+    add_custom_command(TARGET mySwitcher POST_BUILD
+        COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+            --$<IF:$<CONFIG:Debug>,debug,release>
+            --no-translations
+            --no-opengl-sw
+            --no-system-d3d-compiler
+            "$<TARGET_FILE:mySwitcher>"
+        COMMENT "Deploying Qt runtime dependencies beside mySwitcher"
+        VERBATIM
+    )
+endif()
+```
+
+Do not copy DLLs with hard-coded Qt paths. Do not deploy Qt beside test executables; their CTest runtime PATH remains the test mechanism.
+
+- [ ] **Step 4: Force a Debug relink and verify GREEN**
+
+```powershell
+cmake -S . -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
+cmake --build build --config Debug --target mySwitcher --clean-first
+pwsh -NoProfile -File tests/verify_windows_deployment.ps1 `
+  -ExePath build/Debug/mySwitcher.exe -Configuration Debug
+```
+
+Expected: build output contains `Deploying Qt runtime dependencies beside mySwitcher`; the script passes.
+
+- [ ] **Step 5: Build and verify Release deployment**
+
+```powershell
+cmake --build build --config Release --target mySwitcher --clean-first
+pwsh -NoProfile -File tests/verify_windows_deployment.ps1 `
+  -ExePath build/Release/mySwitcher.exe -Configuration Release
+```
+
+Expected: release DLLs and `platforms/qwindows.dll` exist and the script passes.
+
+- [ ] **Step 6: Verify direct launch without a Qt bin PATH**
+
+Temporarily stop any existing mySwitcher instance, launch `build/Release/mySwitcher.exe` from a shell whose PATH does not contain a Qt directory, wait two seconds, and verify the process remains running. Stop the test process and restore the user's original instance afterward.
+
+- [ ] **Step 7: Commit Task 7**
+
+```powershell
+git add CMakeLists.txt tests/verify_windows_deployment.ps1
+git commit -m "build: deploy Qt runtime beside Windows executable"
+```
+
+---
+
 ## Completion Criteria
 
 - Native title bar matches the dark surface or safely falls back.
@@ -688,4 +802,5 @@ Expected: Release succeeds, every registered test passes, and only intentionally
 - Search, selection, pin, activation, card close, chip close, and group close do not regress.
 - Group close shows no confirmation dialog.
 - Debug and Release builds succeed; all registered Qt tests pass.
+- Debug and Release mySwitcher output directories pass `verify_windows_deployment.ps1` and launch without a Qt bin PATH.
 - Maintenance documentation reflects the implemented state.
