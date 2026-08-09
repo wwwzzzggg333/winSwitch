@@ -30,6 +30,11 @@ QScrollArea#ContentScroll > QWidget > QWidget {
     background-color: #1a1b20;
 }
 
+QWidget#EmptyState { background-color: #1a1b20; }
+QLabel#EmptyStateGlyph { color: #667083; font-size: 34px; }
+QLabel#EmptyStateTitle { color: #e1e5ec; font-size: 15px; font-weight: 600; }
+QLabel#EmptyStateHint { color: #8b919e; font-size: 12px; }
+
 QScrollBar:vertical {
     background: #1a1b20;
     width: 10px;

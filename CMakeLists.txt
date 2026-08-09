@@ -155,9 +155,12 @@ if(BUILD_TESTING)
 
     qt_add_executable(test_switcher_panel
         tests/test_switcher_panel.cpp
+        src/ui/SwitcherPanel.cpp
         src/ui/WindowCard.cpp
+        src/core/WindowModel.cpp
         src/core/I18n.cpp
         src/core/Config.cpp
+        src/core/AppLog.cpp
     )
     target_include_directories(test_switcher_panel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(test_switcher_panel PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)

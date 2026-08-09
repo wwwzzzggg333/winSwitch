@@ -75,6 +75,26 @@ QString I18n::previewUnavailable() const {
         : QStringLiteral("Preview unavailable");
 }
 
+QString I18n::noSwitchableWindows() const {
+    return m_locale == Locale::Zh ? QStringLiteral("当前没有可切换窗口")
+                                  : QStringLiteral("No switchable windows");
+}
+
+QString I18n::noMatchingWindows() const {
+    return m_locale == Locale::Zh ? QStringLiteral("没有匹配的窗口")
+                                  : QStringLiteral("No matching windows");
+}
+
+QString I18n::emptyWindowsHint() const {
+    return m_locale == Locale::Zh ? QStringLiteral("尝试打开一个窗口，或检查排除应用设置。")
+                                  : QStringLiteral("Open a window or check the excluded-app settings.");
+}
+
+QString I18n::noMatchingWindowsHint() const {
+    return m_locale == Locale::Zh ? QStringLiteral("请尝试其他关键词。")
+                                  : QStringLiteral("Try a different search term.");
+}
+
 QString I18n::windowCount(int count) const {
     return QStringLiteral("(%1)").arg(count);
 }

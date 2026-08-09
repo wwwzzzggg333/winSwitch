@@ -190,6 +190,31 @@ void SwitcherPanel::rebuildContent() {
     AppLog::info(QStringLiteral("rebuildContent: layout cleared"));
 
     const QVector<AppGroup> groups = m_state.visibleGroups();
+    if (groups.isEmpty()) {
+        auto *emptyState = new QWidget;
+        emptyState->setObjectName(QStringLiteral("EmptyState"));
+        auto *layout = new QVBoxLayout(emptyState);
+        layout->setAlignment(Qt::AlignCenter);
+        layout->setSpacing(8);
+        const bool searching = !m_state.searchText.trimmed().isEmpty();
+        auto *glyph = new QLabel(QStringLiteral("⌕"));
+        glyph->setObjectName(QStringLiteral("EmptyStateGlyph"));
+        glyph->setAlignment(Qt::AlignCenter);
+        layout->addWidget(glyph);
+        auto *title = new QLabel(searching ? m_i18n.noMatchingWindows()
+                                           : m_i18n.noSwitchableWindows());
+        title->setObjectName(QStringLiteral("EmptyStateTitle"));
+        title->setAlignment(Qt::AlignCenter);
+        layout->addWidget(title);
+        auto *hint = new QLabel(searching ? m_i18n.noMatchingWindowsHint()
+                                          : m_i18n.emptyWindowsHint());
+        hint->setObjectName(QStringLiteral("EmptyStateHint"));
+        hint->setAlignment(Qt::AlignCenter);
+        hint->setWordWrap(true);
+        layout->addWidget(hint);
+        m_contentLayout->addWidget(emptyState, 1);
+        return;
+    }
     for (int gi = 0; gi < groups.size(); ++gi) {
         const AppGroup &g = groups.at(gi);
         AppLog::info(QStringLiteral("rebuildContent: group %1/%2 app=%3 windows=%4")
