@@ -10,11 +10,29 @@ QString exeFileName(const QString &exePath) {
     return exePath.mid(slash + 1).toLower();
 }
 
+void sortGroupsByWindowCount(QVector<AppGroup> *groups) {
+    std::stable_sort(groups->begin(), groups->end(), [](const AppGroup &a, const AppGroup &b) {
+        return a.windows.size() > b.windows.size();
+    });
+}
+
+void sortWindowsByTitle(QVector<WindowItem> *windows, const QHash<qint64, qint64> &windowMru) {
+    std::stable_sort(windows->begin(), windows->end(), [&windowMru](const WindowItem &a, const WindowItem &b) {
+        const int titleOrder = a.title.compare(b.title, Qt::CaseInsensitive);
+        if (titleOrder != 0) {
+            return titleOrder < 0;
+        }
+
+        const qint64 mruA = windowMru.value(a.windowId, 0);
+        const qint64 mruB = windowMru.value(b.windowId, 0);
+        return mruA > mruB;
+    });
+}
+
 } // namespace
 
 QVector<AppGroup> buildGroups(
     const QList<RawWindow> &raws,
-    const QStringList &pinned,
     const QStringList &excluded,
     const QHash<QString, qint64> &groupMru,
     const QHash<qint64, qint64> &windowMru) {
@@ -22,11 +40,6 @@ QVector<AppGroup> buildGroups(
     for (const QString &e : excluded) {
         excludedLc.append(e.toLower());
     }
-    QStringList pinnedLc;
-    for (const QString &p : pinned) {
-        pinnedLc.append(p.toLower());
-    }
-
     QStringList order;
     QHash<QString, AppGroup> map;
 
@@ -43,7 +56,6 @@ QVector<AppGroup> buildGroups(
             AppGroup group;
             group.exePath = r.exePath;
             group.appName = r.appName;
-            group.pinned = pinnedLc.contains(fname);
             map.insert(r.exePath, group);
         }
         WindowItem item;
@@ -56,30 +68,12 @@ QVector<AppGroup> buildGroups(
     QVector<AppGroup> groups;
     for (const QString &key : order) {
         AppGroup g = map.take(key);
-        if (exeFileName(g.exePath) == QStringLiteral("explorer.exe")) {
-            std::sort(g.windows.begin(), g.windows.end(), [](const WindowItem &a, const WindowItem &b) {
-                const QString ka = a.folderPath.isEmpty() ? a.title : a.folderPath;
-                const QString kb = b.folderPath.isEmpty() ? b.title : b.folderPath;
-                return ka.compare(kb, Qt::CaseInsensitive) < 0;
-            });
-        } else if (!windowMru.isEmpty()) {
-            std::stable_sort(g.windows.begin(), g.windows.end(),
-                [&windowMru](const WindowItem &a, const WindowItem &b) {
-                    return windowMru.value(a.windowId, 0) > windowMru.value(b.windowId, 0);
-                });
-        }
+        sortWindowsByTitle(&g.windows, windowMru);
         groups.append(g);
     }
 
-    std::stable_sort(groups.begin(), groups.end(),
-        [&groupMru](const AppGroup &a, const AppGroup &b) {
-            if (a.pinned != b.pinned) {
-                return a.pinned > b.pinned;
-            }
-            const qint64 ta = groupMru.value(exeFileName(a.exePath), 0);
-            const qint64 tb = groupMru.value(exeFileName(b.exePath), 0);
-            return ta > tb;
-        });
+    Q_UNUSED(groupMru);
+    sortGroupsByWindowCount(&groups);
     return groups;
 }
 
@@ -157,6 +151,7 @@ void AppState::removeWindow(qint64 windowId) {
         std::remove_if(groups.begin(), groups.end(),
                        [](const AppGroup &g) { return g.windows.isEmpty(); }),
         groups.end());
+    sortGroupsByWindowCount(&groups);
     clampSelection();
 }
 
@@ -169,23 +164,6 @@ void AppState::removeGroup(const QString &exePath) {
         filter.kind = FilterKind::All;
         filter.exePath.clear();
     }
-    clampSelection();
-}
-
-void AppState::setPinned(const QStringList &pinned) {
-    QStringList pinnedLc;
-    for (const QString &p : pinned) {
-        pinnedLc.append(p.toLower());
-    }
-    for (AppGroup &g : groups) {
-        g.pinned = pinnedLc.contains(exeFileName(g.exePath));
-    }
-    std::stable_sort(groups.begin(), groups.end(), [](const AppGroup &a, const AppGroup &b) {
-        if (a.pinned != b.pinned) {
-            return a.pinned > b.pinned;
-        }
-        return false;
-    });
     clampSelection();
 }
 

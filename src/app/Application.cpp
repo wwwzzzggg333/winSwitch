@@ -124,7 +124,6 @@ void ApplicationController::refreshWindows() {
     const QList<RawWindow> raws = m_windowSource->listWindows();
     const QVector<AppGroup> groups = buildGroups(
         raws,
-        m_config.pinned,
         m_config.excluded,
         m_config.mruEnabled ? m_config.mruTimes : QHash<QString, qint64>{},
         m_config.mruEnabled ? m_windowMru : QHash<qint64, qint64>{});
@@ -285,19 +284,6 @@ void ApplicationController::onPanelAction() {
         m_state.removeGroup(action.exePath);
         m_mainWindow->showPanel(m_state, m_icons, m_thumbs, m_config.thumbnail);
         break;
-    case MainWindow::PanelActionType::TogglePin: {
-        const QString fname = action.exePath.section('/', -1).section('\\', -1).toLower();
-        int idx = m_config.pinned.indexOf(fname);
-        if (idx >= 0) {
-            m_config.pinned.removeAt(idx);
-        } else {
-            m_config.pinned.append(fname);
-        }
-        m_config.save();
-        m_state.setPinned(m_config.pinned);
-        m_mainWindow->showPanel(m_state, m_icons, m_thumbs, m_config.thumbnail);
-        break;
-    }
     case MainWindow::PanelActionType::Dismiss:
         hideAll();
         break;

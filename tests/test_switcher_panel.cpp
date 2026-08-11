@@ -69,7 +69,7 @@ private slots:
     void showsNoMatchStateForSearch() {
         RawWindow raw{7, QStringLiteral("Terminal"), QStringLiteral("C:/terminal.exe"),
                       QStringLiteral("Terminal"), {}};
-        AppState state = AppState::create(buildGroups({raw}, {}, {}), Filter{});
+        AppState state = AppState::create(buildGroups({raw}, {}), Filter{});
         SwitcherPanel panel(zhI18n());
         panel.setData(state, {}, {}, true);
         auto *search = panel.findChild<QLineEdit *>(QStringLiteral("SearchEdit"));

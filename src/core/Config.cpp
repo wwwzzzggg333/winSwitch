@@ -50,12 +50,6 @@ QJsonObject toJson(const Config &cfg) {
     obj.insert(QStringLiteral("language"), cfg.language);
     obj.insert(QStringLiteral("mru_enabled"), cfg.mruEnabled);
 
-    QJsonArray pinned;
-    for (const QString &p : cfg.pinned) {
-        pinned.append(p);
-    }
-    obj.insert(QStringLiteral("pinned"), pinned);
-
     QJsonArray excluded;
     for (const QString &e : cfg.excluded) {
         excluded.append(e);
@@ -78,14 +72,6 @@ Config fromJson(const QJsonObject &obj) {
     cfg.panelHeight = obj.value(QStringLiteral("panel_height")).toDouble(cfg.panelHeight);
     cfg.language = obj.value(QStringLiteral("language")).toString(cfg.language);
     cfg.mruEnabled = obj.value(QStringLiteral("mru_enabled")).toBool(cfg.mruEnabled);
-
-    cfg.pinned.clear();
-    for (const QJsonValue &v : obj.value(QStringLiteral("pinned")).toArray()) {
-        const QString s = v.toString().trimmed();
-        if (!s.isEmpty()) {
-            cfg.pinned.append(s);
-        }
-    }
 
     cfg.excluded.clear();
     const QJsonArray excludedArr = obj.value(QStringLiteral("excluded")).toArray();
@@ -208,7 +194,6 @@ bool Config::operator==(const Config &other) const {
         && panelWidth == other.panelWidth
         && panelHeight == other.panelHeight
         && language == other.language
-        && pinned == other.pinned
         && excluded == other.excluded
         && mruEnabled == other.mruEnabled
         && mruTimes == other.mruTimes;

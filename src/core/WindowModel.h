@@ -15,7 +15,6 @@ struct WindowItem {
 struct AppGroup {
     QString exePath;
     QString appName;
-    bool pinned = false;
     QVector<WindowItem> windows;
 };
 
@@ -44,7 +43,6 @@ struct AppState {
     void setSearchText(const QString &text);
     void removeWindow(qint64 windowId);
     void removeGroup(const QString &exePath);
-    void setPinned(const QStringList &pinned);
     void moveSelection(int dy, int dx);
 
 private:
@@ -53,7 +51,6 @@ private:
 
 QVector<AppGroup> buildGroups(
     const QList<RawWindow> &raws,
-    const QStringList &pinned,
     const QStringList &excluded,
     const QHash<QString, qint64> &groupMru = {},
     const QHash<qint64, qint64> &windowMru = {});

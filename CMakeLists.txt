@@ -38,15 +38,19 @@ set(PLATFORM_COMMON
 )
 
 if(WIN32)
-    set(PLATFORM_SOURCES
+    set(WINDOW_SOURCE_SOURCES
         src/platform/windows/WinWindowSource.cpp
         src/platform/windows/WinExplorerPaths.cpp
+    )
+    set(PLATFORM_SOURCES
+        ${WINDOW_SOURCE_SOURCES}
         src/app/HotkeyManager_win.cpp
     )
 elseif(APPLE)
     enable_language(OBJCXX)
+    set(WINDOW_SOURCE_SOURCES src/platform/macos/MacWindowSource.mm)
     set(PLATFORM_SOURCES
-        src/platform/macos/MacWindowSource.mm
+        ${WINDOW_SOURCE_SOURCES}
         src/app/HotkeyManager_mac.mm
     )
     find_library(COCOA_FRAMEWORK Cocoa REQUIRED)
@@ -56,8 +60,9 @@ elseif(APPLE)
 elseif(UNIX)
     find_package(X11)
     if(X11_FOUND)
+        set(WINDOW_SOURCE_SOURCES src/platform/linux/LinuxWindowSource.cpp)
         set(PLATFORM_SOURCES
-            src/platform/linux/LinuxWindowSource.cpp
+            ${WINDOW_SOURCE_SOURCES}
             src/app/HotkeyManager_linux.cpp
         )
         set(LINUX_X11_LIBS ${X11_LIBRARIES})
@@ -168,6 +173,41 @@ if(BUILD_TESTING)
     target_link_libraries(test_switcher_panel PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
     add_test(NAME switcher_panel COMMAND test_switcher_panel)
     set_tests_properties(switcher_panel PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
+    )
+
+    qt_add_executable(test_main_window_lifecycle
+        tests/test_main_window_lifecycle.cpp
+        ${CORE_SOURCES}
+        ${UI_SOURCES}
+        ${PLATFORM_COMMON}
+        ${WINDOW_SOURCE_SOURCES}
+    )
+    target_include_directories(test_main_window_lifecycle PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${LINUX_X11_INCLUDES}
+    )
+    target_link_libraries(test_main_window_lifecycle PRIVATE
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+        Qt6::Test
+        ${LINUX_X11_LIBS}
+    )
+    if(WIN32)
+        target_link_libraries(test_main_window_lifecycle PRIVATE
+            user32 gdi32 dwmapi ole32 oleaut32 shell32 psapi
+        )
+    elseif(APPLE)
+        target_link_libraries(test_main_window_lifecycle PRIVATE
+            ${COCOA_FRAMEWORK}
+            ${CORE_GRAPHICS_FRAMEWORK}
+            ${CORE_FOUNDATION_FRAMEWORK}
+            ${APPLICATION_SERVICES_FRAMEWORK}
+        )
+    endif()
+    add_test(NAME main_window_lifecycle COMMAND test_main_window_lifecycle)
+    set_tests_properties(main_window_lifecycle PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
     )
 endif()

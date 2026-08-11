@@ -10,6 +10,7 @@
 #include <QElapsedTimer>
 
 class QScreen;
+class QStackedWidget;
 
 class SwitcherPanel;
 class SettingsDialog;
@@ -23,7 +24,6 @@ public:
         Activate,
         CloseWindow,
         CloseGroup,
-        TogglePin,
         Dismiss
     };
 
@@ -64,6 +64,7 @@ private:
 
     Config m_config;
     I18n m_i18n;
+    QStackedWidget *m_pages = nullptr;
     SwitcherPanel *m_panel = nullptr;
     SettingsDialog *m_settings = nullptr;
     PanelAction m_lastAction;

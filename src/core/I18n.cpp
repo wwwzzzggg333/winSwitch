@@ -49,16 +49,8 @@ QString I18n::filterAll() const {
     return m_locale == Locale::Zh ? QStringLiteral("全部") : QStringLiteral("All");
 }
 
-QString I18n::pin() const {
-    return m_locale == Locale::Zh ? QStringLiteral("置顶") : QStringLiteral("Pin");
-}
-
-QString I18n::pinned() const {
-    return m_locale == Locale::Zh ? QStringLiteral("已置顶") : QStringLiteral("Pinned");
-}
-
 QString I18n::closeAllGroup() const {
-    return m_locale == Locale::Zh ? QStringLiteral("关全部") : QStringLiteral("Close all");
+    return m_locale == Locale::Zh ? QStringLiteral("全部关闭") : QStringLiteral("Close all");
 }
 
 QString I18n::closeGroupTooltip() const {
@@ -146,13 +138,8 @@ QString I18n::excludedAppsLabel() const {
                                     : QStringLiteral("Excluded apps (one exe name per line)");
 }
 
-QString I18n::pinnedAppsLabel() const {
-    return m_locale == Locale::Zh ? QStringLiteral("置顶应用（每行一个 exe 文件名）")
-                                    : QStringLiteral("Pinned apps (one exe name per line)");
-}
-
 QString I18n::trayOpenSettings() const {
-    return m_locale == Locale::Zh ? QStringLiteral("打开配置") : QStringLiteral("Settings");
+    return m_locale == Locale::Zh ? QStringLiteral("设置") : QStringLiteral("Settings");
 }
 
 QString I18n::trayQuit() const {
@@ -222,107 +209,6 @@ QString I18n::searchPlaceholder() const {
                                   : QStringLiteral("Search title, app or path...");
 }
 
-QString I18n::settingsTabGeneral() const {
-    return m_locale == Locale::Zh ? QStringLiteral("常规") : QStringLiteral("General");
-}
-
-QString I18n::settingsTabDiagnostics() const {
-    return m_locale == Locale::Zh ? QStringLiteral("诊断") : QStringLiteral("Diagnostics");
-}
-
 QString I18n::saveButton() const {
     return m_locale == Locale::Zh ? QStringLiteral("保存") : QStringLiteral("Save");
-}
-
-QString I18n::diagAppVersion() const {
-    return m_locale == Locale::Zh ? QStringLiteral("应用版本") : QStringLiteral("App version");
-}
-
-QString I18n::diagPlatform() const {
-    return m_locale == Locale::Zh ? QStringLiteral("平台") : QStringLiteral("Platform");
-}
-
-QString I18n::diagSessionType() const {
-    return m_locale == Locale::Zh ? QStringLiteral("会话类型") : QStringLiteral("Session type");
-}
-
-QString I18n::diagHotkey() const {
-    return m_locale == Locale::Zh ? QStringLiteral("全局热键") : QStringLiteral("Global hotkey");
-}
-
-QString I18n::diagActivate() const {
-    return m_locale == Locale::Zh ? QStringLiteral("激活窗口") : QStringLiteral("Activate window");
-}
-
-QString I18n::diagCloseWindow() const {
-    return m_locale == Locale::Zh ? QStringLiteral("关闭窗口") : QStringLiteral("Close window");
-}
-
-QString I18n::diagIcon() const {
-    return m_locale == Locale::Zh ? QStringLiteral("窗口图标") : QStringLiteral("Window icon");
-}
-
-QString I18n::diagThumbnail() const {
-    return m_locale == Locale::Zh ? QStringLiteral("窗口缩略图") : QStringLiteral("Window thumbnail");
-}
-
-QString I18n::diagFolderPath() const {
-    return m_locale == Locale::Zh ? QStringLiteral("文件夹路径") : QStringLiteral("Folder path");
-}
-
-QString I18n::diagConfigPath() const {
-    return m_locale == Locale::Zh ? QStringLiteral("配置文件") : QStringLiteral("Config file");
-}
-
-QString I18n::diagLogPath() const {
-    return m_locale == Locale::Zh ? QStringLiteral("日志文件") : QStringLiteral("Log file");
-}
-
-QString I18n::diagOpenDataDir() const {
-    return m_locale == Locale::Zh ? QStringLiteral("打开数据目录") : QStringLiteral("Open data folder");
-}
-
-QString I18n::capabilityFull() const {
-    return m_locale == Locale::Zh ? QStringLiteral("支持") : QStringLiteral("Supported");
-}
-
-QString I18n::capabilityPartial() const {
-    return m_locale == Locale::Zh ? QStringLiteral("部分支持") : QStringLiteral("Partial");
-}
-
-QString I18n::capabilityNone() const {
-    return m_locale == Locale::Zh ? QStringLiteral("不支持") : QStringLiteral("Not supported");
-}
-
-QString I18n::importConfig() const {
-    return m_locale == Locale::Zh ? QStringLiteral("导入配置…") : QStringLiteral("Import config...");
-}
-
-QString I18n::exportConfig() const {
-    return m_locale == Locale::Zh ? QStringLiteral("导出配置…") : QStringLiteral("Export config...");
-}
-
-QString I18n::configFileFilter() const {
-    return m_locale == Locale::Zh ? QStringLiteral("JSON 配置文件 (*.json)")
-                                  : QStringLiteral("JSON config files (*.json)");
-}
-
-QString I18n::exportSucceeded(const QString &path) const {
-    return m_locale == Locale::Zh ? QStringLiteral("配置已导出到 %1").arg(path)
-                                  : QStringLiteral("Config exported to %1").arg(path);
-}
-
-QString I18n::exportFailed(const QString &err) const {
-    return m_locale == Locale::Zh ? QStringLiteral("导出失败：%1").arg(err)
-                                  : QStringLiteral("Export failed: %1").arg(err);
-}
-
-QString I18n::importSucceeded() const {
-    return m_locale == Locale::Zh ? QStringLiteral("配置已载入，点击保存后生效")
-                                  : QStringLiteral("Config loaded. Click Save to apply.");
-}
-
-QString I18n::importFailed(const QString &err) const {
-    return m_locale == Locale::Zh ? QStringLiteral("导入失败：%1").arg(err)
-                                  : QStringLiteral("Import failed: %1").arg(err);
 }

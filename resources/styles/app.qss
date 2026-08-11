@@ -97,6 +97,13 @@ QLineEdit#SearchEdit:hover {
     border-color: #4d5360;
 }
 
+QLineEdit#SearchEdit QToolButton#qt_edit_clear {
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    background-color: transparent;
+    border: none;
+}
+
 /* ---- Filter pills ---- */
 QFrame#FilterChip,
 QFrame#FilterChipActive {
@@ -221,7 +228,6 @@ QLabel#GroupCount {
     padding: 2px 0;
 }
 
-QToolButton#GroupAction,
 QToolButton#GroupCloseAction {
     background-color: #252830;
     border: 1px solid #3a3f4b;
@@ -231,25 +237,10 @@ QToolButton#GroupCloseAction {
     font-size: 12px;
 }
 
-QToolButton#GroupAction:hover {
-    background-color: #2e323c;
-    border-color: #4d5360;
-    color: #eceff4;
-}
-
 QToolButton#GroupCloseAction:hover {
     background-color: #4a2528;
     border-color: #a74349;
     color: #ffe9ea;
-}
-
-QToolButton#GroupActionPinned {
-    background-color: #2a3545;
-    border: 1px solid #3d7dd4;
-    border-radius: 8px;
-    padding: 4px 10px;
-    color: #7eb6ff;
-    font-size: 12px;
 }
 
 /* ---- Window cards ---- */
@@ -312,42 +303,6 @@ QToolButton#CardClose:hover {
 }
 
 /* ---- Settings ---- */
-QLabel#SettingsTitle {
-    color: #eceff4;
-    font-size: 18px;
-    font-weight: 600;
-    padding-bottom: 4px;
-}
-
-QTabWidget::pane {
-    border: 1px solid #3a3f4b;
-    border-radius: 8px;
-    background: #1a1b20;
-    top: -1px;
-}
-
-QTabBar::tab {
-    background: #252830;
-    color: #8b919e;
-    border: 1px solid #3a3f4b;
-    border-bottom: none;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    padding: 8px 16px;
-    margin-right: 2px;
-}
-
-QTabBar::tab:selected {
-    background: #1a1b20;
-    color: #eceff4;
-    border-bottom: 1px solid #1a1b20;
-}
-
-QTabBar::tab:hover:!selected {
-    background: #2e323c;
-    color: #eceff4;
-}
-
 QPlainTextEdit, QCheckBox, QRadioButton, QLabel {
     color: #eceff4;
 }
@@ -388,17 +343,6 @@ QPushButton:hover {
 
 QPushButton:pressed {
     background-color: #2f6bb8;
-}
-
-QPushButton#SecondaryButton {
-    background-color: #252830;
-    border: 1px solid #3a3f4b;
-    color: #c8cdd8;
-}
-
-QPushButton#SecondaryButton:hover {
-    background-color: #2e323c;
-    color: #eceff4;
 }
 
 /* ---- Dialogs ---- */

@@ -10,7 +10,6 @@ struct Config {
     double panelWidth = 960.0;
     double panelHeight = 600.0;
     QString language = QStringLiteral("auto");
-    QStringList pinned;
     QStringList excluded = {QStringLiteral("TextInputHost.exe")};
     bool mruEnabled = true;
     QHash<QString, qint64> mruTimes;

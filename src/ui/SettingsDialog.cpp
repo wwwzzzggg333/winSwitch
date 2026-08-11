@@ -2,45 +2,17 @@
 #include "ui/HotkeyEdit.h"
 
 #include "core/Config.h"
-#include "platform/PlatformCapabilities.h"
 
 #include <QButtonGroup>
 #include <QCheckBox>
-#include <QDesktopServices>
-#include <QFileDialog>
 #include <QFormLayout>
 #include <QGroupBox>
+#include <QHBoxLayout>
 #include <QLabel>
-#include "ui/AppMessageBox.h"
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QRadioButton>
-#include <QTabWidget>
-#include <QUrl>
 #include <QVBoxLayout>
-
-namespace {
-
-QString capabilityText(CapabilityLevel level, const I18n &i18n) {
-    switch (level) {
-    case CapabilityLevel::Full:
-        return QStringLiteral("✓ ") + i18n.capabilityFull();
-    case CapabilityLevel::Partial:
-        return QStringLiteral("△ ") + i18n.capabilityPartial();
-    case CapabilityLevel::Unavailable:
-        return QStringLiteral("✗ ") + i18n.capabilityNone();
-    }
-    return {};
-}
-
-QLabel *selectablePathLabel(const QString &path) {
-    auto *label = new QLabel(path);
-    label->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    label->setWordWrap(true);
-    return label;
-}
-
-} // namespace
 
 SettingsDialog::SettingsDialog(I18n i18n, QWidget *parent) : QWidget(parent), m_i18n(i18n) {
     buildUi();
@@ -50,9 +22,7 @@ void SettingsDialog::setConfig(const Config &config) {
     m_config = config;
     m_hotkeyEdit->setHotkey(config.hotkey);
     m_thumbnail->setChecked(config.thumbnail);
-    m_mruEnabled->setChecked(config.mruEnabled);
     m_excluded->setPlainText(config.excluded.join('\n'));
-    m_pinned->setPlainText(config.pinned.join('\n'));
     const QString lc = config.language.trimmed().toLower();
     const int langId = (lc == QStringLiteral("zh")) ? 1 : (lc == QStringLiteral("en")) ? 2 : 0;
     if (auto *btn = m_languageGroup->button(langId)) {
@@ -62,18 +32,12 @@ void SettingsDialog::setConfig(const Config &config) {
 
 void SettingsDialog::buildUi() {
     auto *layout = new QVBoxLayout(this);
-    auto *tabs = new QTabWidget;
-    tabs->addTab(buildGeneralTab(), m_i18n.settingsTabGeneral());
-    tabs->addTab(buildDiagnosticsTab(), m_i18n.settingsTabDiagnostics());
-    layout->addWidget(tabs);
+    layout->addWidget(buildGeneralPage());
 }
 
-QWidget *SettingsDialog::buildGeneralTab() {
+QWidget *SettingsDialog::buildGeneralPage() {
     auto *page = new QWidget;
     auto *layout = new QVBoxLayout(page);
-    auto *title = new QLabel(m_i18n.settingsTitle());
-    title->setObjectName(QStringLiteral("SettingsTitle"));
-    layout->addWidget(title);
 
     auto *form = new QFormLayout;
     m_hotkeyEdit = new HotkeyEdit(m_i18n);
@@ -83,9 +47,6 @@ QWidget *SettingsDialog::buildGeneralTab() {
 
     m_thumbnail = new QCheckBox(m_i18n.showThumbnails());
     layout->addWidget(m_thumbnail);
-
-    m_mruEnabled = new QCheckBox(m_i18n.mruEnabled());
-    layout->addWidget(m_mruEnabled);
 
     auto *langBox = new QGroupBox(m_i18n.languageLabel());
     auto *langLayout = new QHBoxLayout(langBox);
@@ -107,58 +68,9 @@ QWidget *SettingsDialog::buildGeneralTab() {
     m_excluded->setFixedHeight(100);
     layout->addWidget(m_excluded);
 
-    layout->addWidget(new QLabel(m_i18n.pinnedAppsLabel()));
-    m_pinned = new QPlainTextEdit;
-    m_pinned->setFixedHeight(100);
-    layout->addWidget(m_pinned);
-
-    auto *ioRow = new QHBoxLayout;
-    auto *importBtn = new QPushButton(m_i18n.importConfig());
-    importBtn->setObjectName(QStringLiteral("SecondaryButton"));
-    auto *exportBtn = new QPushButton(m_i18n.exportConfig());
-    exportBtn->setObjectName(QStringLiteral("SecondaryButton"));
-    connect(importBtn, &QPushButton::clicked, this, &SettingsDialog::onImportConfig);
-    connect(exportBtn, &QPushButton::clicked, this, &SettingsDialog::onExportConfig);
-    ioRow->addWidget(importBtn);
-    ioRow->addWidget(exportBtn);
-    ioRow->addStretch();
-    layout->addLayout(ioRow);
-
     auto *saveBtn = new QPushButton(m_i18n.saveButton());
     connect(saveBtn, &QPushButton::clicked, this, &SettingsDialog::saveFromUi);
     layout->addWidget(saveBtn);
-    layout->addStretch();
-    return page;
-}
-
-QWidget *SettingsDialog::buildDiagnosticsTab() {
-    auto *page = new QWidget;
-    auto *layout = new QVBoxLayout(page);
-    const PlatformCapabilities caps = queryPlatformCapabilities();
-    auto *form = new QFormLayout;
-
-#ifdef WINSWITCH_VERSION
-    form->addRow(m_i18n.diagAppVersion(), new QLabel(QStringLiteral(WINSWITCH_VERSION)));
-#else
-    form->addRow(m_i18n.diagAppVersion(), new QLabel(QStringLiteral("unknown")));
-#endif
-    form->addRow(m_i18n.diagPlatform(), new QLabel(caps.platformName));
-    form->addRow(m_i18n.diagSessionType(), new QLabel(caps.sessionType));
-    form->addRow(m_i18n.diagHotkey(), new QLabel(capabilityText(caps.hotkey, m_i18n)));
-    form->addRow(m_i18n.diagActivate(), new QLabel(capabilityText(caps.activate, m_i18n)));
-    form->addRow(m_i18n.diagCloseWindow(), new QLabel(capabilityText(caps.closeWindow, m_i18n)));
-    form->addRow(m_i18n.diagIcon(), new QLabel(capabilityText(caps.icon, m_i18n)));
-    form->addRow(m_i18n.diagThumbnail(), new QLabel(capabilityText(caps.thumbnail, m_i18n)));
-    form->addRow(m_i18n.diagFolderPath(), new QLabel(capabilityText(caps.folderPath, m_i18n)));
-    form->addRow(m_i18n.diagConfigPath(), selectablePathLabel(Config::configPath()));
-    form->addRow(m_i18n.diagLogPath(), selectablePathLabel(Config::logPath()));
-    layout->addLayout(form);
-
-    auto *openDirBtn = new QPushButton(m_i18n.diagOpenDataDir());
-    connect(openDirBtn, &QPushButton::clicked, this, []() {
-        QDesktopServices::openUrl(QUrl::fromLocalFile(Config::dataDir()));
-    });
-    layout->addWidget(openDirBtn);
     layout->addStretch();
     return page;
 }
@@ -167,7 +79,6 @@ Config SettingsDialog::collectFromUi() const {
     Config cfg = m_config;
     cfg.hotkey = m_hotkeyEdit->hotkey();
     cfg.thumbnail = m_thumbnail->isChecked();
-    cfg.mruEnabled = m_mruEnabled->isChecked();
     const auto lines = [](QPlainTextEdit *edit) {
         QStringList out;
         for (const QString &line : edit->toPlainText().split('\n')) {
@@ -179,7 +90,6 @@ Config SettingsDialog::collectFromUi() const {
         return out;
     };
     cfg.excluded = lines(m_excluded);
-    cfg.pinned = lines(m_pinned);
     switch (m_languageGroup->checkedId()) {
     case 1:
         cfg.language = QStringLiteral("zh");
@@ -197,40 +107,4 @@ Config SettingsDialog::collectFromUi() const {
 void SettingsDialog::saveFromUi() {
     m_config = collectFromUi();
     emit saved(m_config);
-}
-
-void SettingsDialog::onImportConfig() {
-    const QString path = QFileDialog::getOpenFileName(
-        this,
-        m_i18n.importConfig(),
-        Config::dataDir(),
-        m_i18n.configFileFilter());
-    if (path.isEmpty()) {
-        return;
-    }
-    Config imported;
-    QString err;
-    if (!Config::importFrom(path, &imported, &err)) {
-        showAppMessage(this, m_i18n.importConfig(), m_i18n.importFailed(err), AppMessageIcon::Warning);
-        return;
-    }
-    setConfig(imported);
-    showAppMessage(this, m_i18n.importConfig(), m_i18n.importSucceeded(), AppMessageIcon::Information);
-}
-
-void SettingsDialog::onExportConfig() {
-    const QString path = QFileDialog::getSaveFileName(
-        this,
-        m_i18n.exportConfig(),
-        Config::dataDir() + QStringLiteral("/winSwitch-config.json"),
-        m_i18n.configFileFilter());
-    if (path.isEmpty()) {
-        return;
-    }
-    QString err;
-    if (!collectFromUi().exportTo(path, &err)) {
-        showAppMessage(this, m_i18n.exportConfig(), m_i18n.exportFailed(err), AppMessageIcon::Warning);
-        return;
-    }
-    showAppMessage(this, m_i18n.exportConfig(), m_i18n.exportSucceeded(path), AppMessageIcon::Information);
 }

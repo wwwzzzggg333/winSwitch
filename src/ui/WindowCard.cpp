@@ -5,6 +5,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMouseEvent>
+#include <QSize>
 #include <QStyle>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -77,7 +78,8 @@ WindowCard::WindowCard(
     closeBarLayout->setContentsMargins(0, 4, 4, 0);
     closeBarLayout->addStretch();
     auto *closeBtn = new QToolButton;
-    closeBtn->setText(QStringLiteral("×"));
+    closeBtn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
+    closeBtn->setIconSize(QSize(10, 10));
     closeBtn->setToolTip(i18n.closeWindowTooltip());
     closeBtn->setObjectName(QStringLiteral("CardClose"));
     closeBtn->setCursor(Qt::PointingHandCursor);

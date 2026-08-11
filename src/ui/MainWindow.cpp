@@ -15,6 +15,7 @@
 #include <QMouseEvent>
 #include <QPalette>
 #include <QScreen>
+#include <QStackedWidget>
 #include <QTimer>
 
 #if defined(Q_OS_WIN)
@@ -55,14 +56,19 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
     setPalette(pal);
     resize(panelSize());
 
-    m_panel = new SwitcherPanel(m_i18n, this);
-    setCentralWidget(m_panel);
+    m_pages = new QStackedWidget(this);
+    setCentralWidget(m_pages);
+
+    m_panel = new SwitcherPanel(m_i18n, m_pages);
+    m_pages->addWidget(m_panel);
     connect(m_panel, &SwitcherPanel::actionTriggered, this, [this](MainWindow::PanelAction action) {
         m_lastAction = action;
         emit panelActionRequested();
     });
 
-    m_settings = new SettingsDialog(m_i18n, this);
+    m_settings = new SettingsDialog(m_i18n, m_pages);
+    m_pages->addWidget(m_settings);
+    m_pages->setCurrentWidget(m_panel);
     connect(m_settings, &SettingsDialog::saved, this, [this](const Config &cfg) {
         m_config = cfg;
         emit settingsSaved(cfg);
@@ -97,7 +103,7 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
 }
 
 bool MainWindow::isPanelVisible() const {
-    return isVisible() && centralWidget() == m_panel;
+    return isVisible() && m_pages->currentWidget() == m_panel;
 }
 
 QScreen *MainWindow::targetScreen() const {
@@ -135,7 +141,7 @@ void MainWindow::showPanel(
     setMaximumSize(panelSize());
     resize(panelSize());
     centerOnScreen();
-    setCentralWidget(m_panel);
+    m_pages->setCurrentWidget(m_panel);
     m_panel->setData(state, icons, thumbs, showThumbnails);
     show();
     raise();
@@ -150,7 +156,7 @@ void MainWindow::showSettings(Config config) {
     m_settings->setConfig(config);
     resize(520, 560);
     centerOnScreen();
-    setCentralWidget(m_settings);
+    m_pages->setCurrentWidget(m_settings);
     show();
     raise();
     activateWindow();

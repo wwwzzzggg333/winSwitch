@@ -18,6 +18,7 @@
 SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i18n(i18n) {
     setObjectName(QStringLiteral("SwitcherPanel"));
     setAttribute(Qt::WA_StyledBackground, true);
+    setFocusPolicy(Qt::StrongFocus);
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(12, 12, 12, 12);
     root->setSpacing(10);
@@ -33,6 +34,7 @@ SwitcherPanel::SwitcherPanel(I18n i18n, QWidget *parent) : QWidget(parent), m_i1
         rebuildContent();
     });
     root->addWidget(m_searchEdit);
+    m_searchEdit->hide();
 
     m_filterScroll = new QScrollArea;
     m_filterScroll->setObjectName(QStringLiteral("FilterScroll"));
@@ -76,6 +78,7 @@ void SwitcherPanel::setData(
     const QHash<qint64, QPixmap> &thumbs,
     bool showThumbnails) {
     m_state = state;
+    m_state.setSearchText(QString());
     m_icons = icons;
     m_thumbs = thumbs;
     m_showThumbnails = showThumbnails;
@@ -86,9 +89,7 @@ void SwitcherPanel::setData(
 }
 
 void SwitcherPanel::focusSearch() {
-    if (m_searchEdit) {
-        m_searchEdit->setFocus(Qt::ShortcutFocusReason);
-    }
+    setFocus(Qt::ShortcutFocusReason);
 }
 
 void SwitcherPanel::updateTextures(const QHash<qint64, QPixmap> &icons, const QHash<qint64, QPixmap> &thumbs) {
@@ -239,18 +240,6 @@ void SwitcherPanel::rebuildContent() {
         count->setObjectName(QStringLiteral("GroupCount"));
         header->addWidget(count);
         header->addStretch();
-
-        auto *pinBtn = new QToolButton;
-        pinBtn->setObjectName(g.pinned ? QStringLiteral("GroupActionPinned") : QStringLiteral("GroupAction"));
-        pinBtn->setText(g.pinned ? m_i18n.pinned() : m_i18n.pin());
-        pinBtn->setCursor(Qt::PointingHandCursor);
-        connect(pinBtn, &QToolButton::clicked, this, [this, g]() {
-            MainWindow::PanelAction action;
-            action.type = MainWindow::PanelActionType::TogglePin;
-            action.exePath = g.exePath;
-            emit actionTriggered(action);
-        });
-        header->addWidget(pinBtn);
 
         auto *closeAllBtn = new QToolButton;
         closeAllBtn->setObjectName(QStringLiteral("GroupCloseAction"));

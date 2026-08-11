@@ -7,3 +7,6 @@ Makefile
 *.autosave
 .cursor/
 .worktrees/
+.history
+cursor-recovered-chats
+todo.md
