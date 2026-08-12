@@ -9,7 +9,7 @@
 
 #include <QApplication>
 #include <QFile>
-#include <QStyle>
+#include <QIcon>
 
 static void loadStyleSheet(QApplication &app) {
     QFile file(QStringLiteral(":/styles/app.qss"));
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     QApplication::setApplicationName(QStringLiteral("winSwitch"));
     QApplication::setOrganizationName(QStringLiteral("winSwitch"));
     QApplication::setQuitOnLastWindowClosed(false);
-    app.setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_ComputerIcon));
+    app.setWindowIcon(QIcon(QStringLiteral(":/icons/winswitch-256.png")));
     loadStyleSheet(app);
     AppLog::init();
     AppLog::info(QStringLiteral("ApplicationController initializing"));

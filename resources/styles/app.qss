@@ -283,17 +283,15 @@ QLabel#CardPath {
 }
 
 QToolButton#CardClose {
-    background-color: rgba(30, 32, 38, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background-color: rgba(74, 82, 96, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.32);
     border-radius: 11px;
     min-width: 22px;
     max-width: 22px;
     min-height: 22px;
     max-height: 22px;
     padding: 0;
-    color: #d0d4dc;
-    font-size: 14px;
-    font-weight: bold;
+    color: #ffffff;
 }
 
 QToolButton#CardClose:hover {

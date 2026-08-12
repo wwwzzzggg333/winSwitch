@@ -151,7 +151,6 @@ void AppState::removeWindow(qint64 windowId) {
         std::remove_if(groups.begin(), groups.end(),
                        [](const AppGroup &g) { return g.windows.isEmpty(); }),
         groups.end());
-    sortGroupsByWindowCount(&groups);
     clampSelection();
 }
 

@@ -109,6 +109,16 @@ QString I18n::showThumbnails() const {
     return m_locale == Locale::Zh ? QStringLiteral("显示窗口缩略图") : QStringLiteral("Show window thumbnails");
 }
 
+QString I18n::startAtLogin() const {
+    return m_locale == Locale::Zh ? QStringLiteral("开机启动") : QStringLiteral("Start at login");
+}
+
+QString I18n::startAtLoginFailed(const QString &reason) const {
+    return m_locale == Locale::Zh
+        ? QStringLiteral("无法更新开机启动设置：%1").arg(reason)
+        : QStringLiteral("Failed to update start-at-login setting: %1").arg(reason);
+}
+
 QString I18n::mruEnabled() const {
     return m_locale == Locale::Zh ? QStringLiteral("按最近使用排序") : QStringLiteral("Sort by recently used");
 }

@@ -22,6 +22,7 @@ void SettingsDialog::setConfig(const Config &config) {
     m_config = config;
     m_hotkeyEdit->setHotkey(config.hotkey);
     m_thumbnail->setChecked(config.thumbnail);
+    m_startAtLogin->setChecked(config.startAtLogin);
     m_excluded->setPlainText(config.excluded.join('\n'));
     const QString lc = config.language.trimmed().toLower();
     const int langId = (lc == QStringLiteral("zh")) ? 1 : (lc == QStringLiteral("en")) ? 2 : 0;
@@ -47,6 +48,9 @@ QWidget *SettingsDialog::buildGeneralPage() {
 
     m_thumbnail = new QCheckBox(m_i18n.showThumbnails());
     layout->addWidget(m_thumbnail);
+
+    m_startAtLogin = new QCheckBox(m_i18n.startAtLogin());
+    layout->addWidget(m_startAtLogin);
 
     auto *langBox = new QGroupBox(m_i18n.languageLabel());
     auto *langLayout = new QHBoxLayout(langBox);
@@ -79,6 +83,7 @@ Config SettingsDialog::collectFromUi() const {
     Config cfg = m_config;
     cfg.hotkey = m_hotkeyEdit->hotkey();
     cfg.thumbnail = m_thumbnail->isChecked();
+    cfg.startAtLogin = m_startAtLogin->isChecked();
     const auto lines = [](QPlainTextEdit *edit) {
         QStringList out;
         for (const QString &line : edit->toPlainText().split('\n')) {

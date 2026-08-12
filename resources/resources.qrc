@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file>icons/winswitch-256.png</file>
         <file>styles/app.qss</file>
     </qresource>
 </RCC>

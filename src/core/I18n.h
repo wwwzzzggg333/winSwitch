@@ -29,6 +29,8 @@ public:
     QString hotkeyHint() const;
     QString hotkeyListening() const;
     QString showThumbnails() const;
+    QString startAtLogin() const;
+    QString startAtLoginFailed(const QString &reason) const;
     QString mruEnabled() const;
     QString languageLabel() const;
     QString languageAuto() const;

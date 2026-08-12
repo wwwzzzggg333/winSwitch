@@ -11,6 +11,7 @@ struct Config {
     double panelHeight = 600.0;
     QString language = QStringLiteral("auto");
     QStringList excluded = {QStringLiteral("TextInputHost.exe")};
+    bool startAtLogin = true;
     bool mruEnabled = true;
     QHash<QString, qint64> mruTimes;
 

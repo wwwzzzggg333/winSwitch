@@ -1,4 +1,5 @@
 #include "ui/SwitcherPanel.h"
+#include "ui/UiIcons.h"
 #include "ui/WindowCard.h"
 
 #include "core/AppLog.h"
@@ -11,6 +12,7 @@
 #include <QLineEdit>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QSize>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QWheelEvent>
@@ -164,7 +166,8 @@ void SwitcherPanel::rebuildFilters() {
         });
 
         auto *closeChip = new QToolButton;
-        closeChip->setText(QStringLiteral("×"));
+        closeChip->setIcon(UiIcons::closeIcon());
+        closeChip->setIconSize(QSize(12, 12));
         closeChip->setToolTip(m_i18n.closeGroupTooltip());
         closeChip->setObjectName(QStringLiteral("CloseChip"));
         closeChip->setCursor(Qt::PointingHandCursor);

@@ -1,5 +1,6 @@
 #include "app/Application.h"
 #include "app/HotkeyManager.h"
+#include "app/StartupManager.h"
 
 #include "core/AppLog.h"
 
@@ -9,7 +10,6 @@
 #include <QDateTime>
 #include <QMenu>
 #include <QSet>
-#include <QStyle>
 #include <QTimer>
 
 ApplicationController::ApplicationController(QObject *parent) : QObject(parent) {}
@@ -33,6 +33,10 @@ void ApplicationController::showHotkeyFailure(
 bool ApplicationController::initialize() {
     m_config = Config::load();
     m_i18n = I18n::fromConfig(m_config);
+    QString startupError;
+    if (!StartupManager::setEnabled(m_config.startAtLogin, &startupError)) {
+        AppLog::warn(QStringLiteral("start at login sync failed: %1").arg(startupError));
+    }
     m_windowSource = createWindowSource();
     m_iconCapture = createIconCapture();
     m_thumbnailCapture = createThumbnailCapture();
@@ -40,7 +44,7 @@ bool ApplicationController::initialize() {
     m_mainWindow = new MainWindow(m_config, m_i18n);
     m_mainWindow->hide();
 
-    m_tray = new QSystemTrayIcon(QApplication::style()->standardIcon(QStyle::SP_ComputerIcon), this);
+    m_tray = new QSystemTrayIcon(QApplication::windowIcon(), this);
     m_tray->setToolTip(m_i18n.trayTooltip(m_config.hotkey));
 
     auto *menu = new QMenu;
@@ -294,7 +298,20 @@ void ApplicationController::onPanelAction() {
 
 void ApplicationController::onSettingsSaved(const Config &cfg) {
     const QString oldHotkey = m_config.hotkey;
+    const bool oldStartAtLogin = m_config.startAtLogin;
     m_config = cfg;
+
+    if (m_config.startAtLogin != oldStartAtLogin) {
+        QString startupError;
+        if (!StartupManager::setEnabled(m_config.startAtLogin, &startupError)) {
+            m_config.startAtLogin = oldStartAtLogin;
+            showAppMessage(
+                m_mainWindow,
+                m_i18n.settingsWindowTitle(),
+                m_i18n.startAtLoginFailed(startupError),
+                AppMessageIcon::Warning);
+        }
+    }
     m_config.save();
 
     if (m_config.hotkey != oldHotkey) {

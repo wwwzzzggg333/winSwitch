@@ -25,5 +25,9 @@ signals:
     void closeRequested();
 
 private:
+    bool eventFilter(QObject *watched, QEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+
+    QWidget *m_thumbnailBox = nullptr;
+    class QToolButton *m_closeButton = nullptr;
 };

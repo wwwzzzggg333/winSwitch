@@ -26,6 +26,7 @@ private:
     Config m_config;
     class HotkeyEdit *m_hotkeyEdit = nullptr;
     class QCheckBox *m_thumbnail = nullptr;
+    class QCheckBox *m_startAtLogin = nullptr;
     class QPlainTextEdit *m_excluded = nullptr;
     class QButtonGroup *m_languageGroup = nullptr;
 };

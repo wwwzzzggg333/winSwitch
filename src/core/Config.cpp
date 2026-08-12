@@ -48,6 +48,7 @@ QJsonObject toJson(const Config &cfg) {
     obj.insert(QStringLiteral("panel_width"), cfg.panelWidth);
     obj.insert(QStringLiteral("panel_height"), cfg.panelHeight);
     obj.insert(QStringLiteral("language"), cfg.language);
+    obj.insert(QStringLiteral("start_at_login"), cfg.startAtLogin);
     obj.insert(QStringLiteral("mru_enabled"), cfg.mruEnabled);
 
     QJsonArray excluded;
@@ -71,6 +72,7 @@ Config fromJson(const QJsonObject &obj) {
     cfg.panelWidth = obj.value(QStringLiteral("panel_width")).toDouble(cfg.panelWidth);
     cfg.panelHeight = obj.value(QStringLiteral("panel_height")).toDouble(cfg.panelHeight);
     cfg.language = obj.value(QStringLiteral("language")).toString(cfg.language);
+    cfg.startAtLogin = obj.value(QStringLiteral("start_at_login")).toBool(cfg.startAtLogin);
     cfg.mruEnabled = obj.value(QStringLiteral("mru_enabled")).toBool(cfg.mruEnabled);
 
     cfg.excluded.clear();
@@ -195,6 +197,7 @@ bool Config::operator==(const Config &other) const {
         && panelHeight == other.panelHeight
         && language == other.language
         && excluded == other.excluded
+        && startAtLogin == other.startAtLogin
         && mruEnabled == other.mruEnabled
         && mruTimes == other.mruTimes;
 }

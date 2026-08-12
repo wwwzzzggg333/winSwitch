@@ -21,6 +21,7 @@ set(APP_SOURCES
     src/app/Application.cpp
     src/app/HotkeyManager.cpp
     src/app/SingleInstance.cpp
+    src/app/StartupManager.cpp
 )
 
 set(UI_SOURCES
@@ -42,6 +43,7 @@ if(WIN32)
         src/platform/windows/WinWindowSource.cpp
         src/platform/windows/WinExplorerPaths.cpp
     )
+    set(PLATFORM_RESOURCES resources/winswitch.rc)
     set(PLATFORM_SOURCES
         ${WINDOW_SOURCE_SOURCES}
         src/app/HotkeyManager_win.cpp
@@ -79,6 +81,7 @@ qt_add_executable(winSwitch
     ${UI_SOURCES}
     ${PLATFORM_COMMON}
     ${PLATFORM_SOURCES}
+    ${PLATFORM_RESOURCES}
     resources/resources.qrc
 )
 

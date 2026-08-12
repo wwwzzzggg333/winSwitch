@@ -1,5 +1,7 @@
 #include "ui/WindowCard.h"
+#include "ui/UiIcons.h"
 
+#include <QEvent>
 #include <QFontMetrics>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -31,15 +33,16 @@ WindowCard::WindowCard(
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(6);
 
-    auto *thumbBox = new QWidget;
-    thumbBox->setFixedSize(210, 118);
-    thumbBox->setObjectName(QStringLiteral("ThumbBox"));
-    thumbBox->setAttribute(Qt::WA_StyledBackground, true);
-    auto *thumbGrid = new QGridLayout(thumbBox);
+    m_thumbnailBox = new QWidget;
+    m_thumbnailBox->setFixedSize(210, 118);
+    m_thumbnailBox->setObjectName(QStringLiteral("ThumbBox"));
+    m_thumbnailBox->setAttribute(Qt::WA_StyledBackground, true);
+    m_thumbnailBox->installEventFilter(this);
+    auto *thumbGrid = new QGridLayout(m_thumbnailBox);
     thumbGrid->setContentsMargins(0, 0, 0, 0);
     thumbGrid->setSpacing(0);
 
-    auto *thumbLabel = new QLabel(thumbBox);
+    auto *thumbLabel = new QLabel(m_thumbnailBox);
     thumbLabel->setObjectName(QStringLiteral("ThumbnailImage"));
     thumbLabel->setAlignment(Qt::AlignCenter);
     if (!thumbnail.isNull()) {
@@ -72,22 +75,23 @@ WindowCard::WindowCard(
         thumbGrid->addWidget(fallback, 0, 0);
     }
 
-    auto *closeBar = new QWidget(thumbBox);
+    auto *closeBar = new QWidget(m_thumbnailBox);
     closeBar->setAttribute(Qt::WA_TransparentForMouseEvents, false);
     auto *closeBarLayout = new QHBoxLayout(closeBar);
     closeBarLayout->setContentsMargins(0, 4, 4, 0);
     closeBarLayout->addStretch();
-    auto *closeBtn = new QToolButton;
-    closeBtn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
-    closeBtn->setIconSize(QSize(10, 10));
-    closeBtn->setToolTip(i18n.closeWindowTooltip());
-    closeBtn->setObjectName(QStringLiteral("CardClose"));
-    closeBtn->setCursor(Qt::PointingHandCursor);
-    connect(closeBtn, &QToolButton::clicked, this, &WindowCard::closeRequested);
-    closeBarLayout->addWidget(closeBtn);
+    m_closeButton = new QToolButton;
+    m_closeButton->setIcon(UiIcons::closeIcon());
+    m_closeButton->setIconSize(QSize(12, 12));
+    m_closeButton->setToolTip(i18n.closeWindowTooltip());
+    m_closeButton->setObjectName(QStringLiteral("CardClose"));
+    m_closeButton->setCursor(Qt::PointingHandCursor);
+    m_closeButton->hide();
+    connect(m_closeButton, &QToolButton::clicked, this, &WindowCard::closeRequested);
+    closeBarLayout->addWidget(m_closeButton);
     thumbGrid->addWidget(closeBar, 0, 0, Qt::AlignTop | Qt::AlignRight);
 
-    layout->addWidget(thumbBox);
+    layout->addWidget(m_thumbnailBox);
 
     auto *title = new QLabel;
     title->setObjectName(QStringLiteral("CardTitle"));
@@ -107,6 +111,17 @@ WindowCard::WindowCard(
     }
 
     setFixedWidth(226);
+}
+
+bool WindowCard::eventFilter(QObject *watched, QEvent *event) {
+    if (watched == m_thumbnailBox) {
+        if (event->type() == QEvent::Enter) {
+            m_closeButton->show();
+        } else if (event->type() == QEvent::Leave) {
+            m_closeButton->hide();
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void WindowCard::mousePressEvent(QMouseEvent *event) {
