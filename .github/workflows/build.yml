@@ -55,11 +55,18 @@ jobs:
           Copy-Item README.md $outDir/
           Compress-Archive -Path $outDir -DestinationPath "packages/$packageName.zip"
 
+          cmake --build build --config Release --target package
+          $installer = Get-Item "build/winSwitch-*-windows-x64.exe"
+          ./tests/verify_windows_installer.ps1 -InstallerPath $installer.FullName
+          Copy-Item $installer.FullName packages/
+
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
           name: package-winSwitch-windows-x64
-          path: packages/winSwitch-windows-x64.zip
+          path: |
+            packages/winSwitch-windows-x64.zip
+            packages/winSwitch-*-windows-x64.exe
           if-no-files-found: error
 
   release:
@@ -80,7 +87,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: packages/*.zip
+          files: packages/*
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

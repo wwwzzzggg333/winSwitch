@@ -1,9 +1,9 @@
 # winSwitch 项目维护与功能演进指南
 
 > 文档定位：当前代码事实基线、接手维护手册和后续功能清单
-> 基线日期：2026-08-09
-> 代码版本：`0.2.0` + 2026-08-09 Windows UI 优化基线（以本文件所在提交为准）
-> 主要验证环境：Windows 11、Qt 6.8.0、MSVC 2022、CMake 3.16+
+> 基线日期：2026-08-13
+> 代码版本：`0.2.0` + Windows UI 与当前用户安装包基线（以本文件所在提交为准）
+> 主要验证环境：Windows 11、Qt 6.8.0、MSVC 2022、CMake 3.27+
 
 ## 1. 结论摘要
 
@@ -39,6 +39,7 @@
 | 键盘导航 | 搜索框输入，方向键选择，Enter 激活，Esc 清空搜索或关闭面板 | `src/ui/SwitcherPanel.cpp` |
 | 多屏定位 | 面板显示在鼠标指针所在屏幕中央 | `src/ui/MainWindow.cpp` |
 | 设置 | 热键、缩略图、MRU、语言、排除/置顶应用、配置导入导出 | `src/ui/SettingsDialog.cpp` |
+| Windows 开机启动 | 默认启用，可在设置中切换；通过当前用户 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 注册 | `src/app/StartupManager.cpp`、`src/core/Config.cpp` |
 | 平台诊断 | 显示版本、平台、会话、能力等级、配置/日志路径 | `src/platform/PlatformCapabilities.h`、`src/ui/SettingsDialog.cpp` |
 | 中英文 | 根据系统或配置选择中文/英文 | `src/core/I18n.*` |
 | 日志 | Qt 全局消息处理器追加写入 `app.log` | `src/core/AppLog.cpp` |
@@ -49,8 +50,9 @@
 | 筛选横向滚动 | 顶部筛选项溢出时可横向滚动；兼容触控板像素增量和非整格滚轮增量，并保留原生水平滚动 | `src/ui/SwitcherPanel.cpp` |
 | 长筛选标签 | 过长应用名限制宽度并省略显示，完整名称保留在工具提示中 | `src/ui/SwitcherPanel.cpp` |
 | 分组标题层级 | 应用名与窗口数量使用独立标签和不同视觉层级 | `src/ui/SwitcherPanel.cpp`、`resources/styles/app.qss` |
-| 自动化 UI 测试 | Qt Test 覆盖安全尺寸、空状态、筛选滚动和整组关闭动作；当前 CTest 共 2 项 | `tests/test_ui_sizing.cpp`、`tests/test_switcher_panel.cpp` |
+| 自动化测试 | Qt Test 覆盖配置路径策略、安全尺寸、空状态、筛选滚动、整组关闭和主窗口生命周期；当前 CTest 共 4 项 | `tests/test_config_paths.cpp`、`tests/test_ui_sizing.cpp`、`tests/test_switcher_panel.cpp`、`tests/test_main_window_lifecycle.cpp` |
 | Qt 本地运行时部署 | Windows Debug/Release 构建后自动用 `windeployqt` 将 Qt DLL 部署到 EXE 输出目录、平台插件部署到其子目录；分发时保留完整部署目录树 | `CMakeLists.txt`、`tests/verify_windows_deployment.ps1` |
+| Windows 当前用户安装包 | CPack + Inno Setup 生成无需管理员权限的安装器，包含 Qt/MSVC 运行库、桌面/开始菜单快捷方式、开机启动注册和卸载清理 | `CMakeLists.txt`、`packaging/*`、`tests/verify_windows_installer.ps1` |
 
 ### 2.2 部分实现或有明显限制
 
@@ -69,10 +71,10 @@
 
 ### 2.3 未实现或尚不完整的工程能力
 
-- 自动化测试已建立最小基线：`ui_sizing` 与 `switcher_panel` 两个 Qt Test 目标；仍缺 Config、WindowModel、平台层和端到端 UI 自动化覆盖。
+- 自动化测试已建立最小基线：当前有 4 个 Qt Test 目标和 Windows 安装器端到端脚本；仍缺 Config 完整读写、WindowModel、平台层和端到端 UI 自动化覆盖。
 - 崩溃报告、日志轮转、诊断信息复制/导出。
 - 无障碍语义、完整键盘焦点可视化、高 DPI/缩放矩阵验证。
-- 自动更新、开机启动、安装器、卸载清理和正式签名。
+- 自动更新、正式代码签名和签名证书管理。
 - 配置 schema 版本与迁移机制。
 - macOS/Linux CI 构建验证；当前 GitHub Actions 只有 `windows-latest`。
 
@@ -221,20 +223,35 @@ Windows 构建会在 `winSwitch` 链接完成后自动调用 Qt 安装目录中�
 .\tests\verify_windows_deployment.ps1 -ExePath .\build\Release\winSwitch.exe -Configuration Release
 ```
 
-2026-08-09 已在当前工作区验证 Debug 和 Release 构建成功；Release 输出为 `build/Release/winSwitch.exe`。
+构建 Windows 安装包需要 Inno Setup 6+：
+
+```powershell
+cmake --build build --config Release --target package
+```
+
+产物为 `build/winSwitch-<版本>-windows-x64.exe`。安装器默认安装到 `%LOCALAPPDATA%\Programs\winSwitch`，不申请管理员权限；`bin/` 包含程序、Qt 与 MSVC 运行库，`plugins/` 包含 Qt 插件。安装时写入当前用户开机启动项，卸载时仅终止可执行路径与本次安装目录精确匹配的实例，再清理程序文件和启动项。安装版通过 `installed.marker` 将 `config.json`、`app.log` 等可变数据放到 `QStandardPaths::AppConfigLocation`，便携构建仍优先使用可写的 EXE 目录。
+
+安装器端到端检查命令：
+
+```powershell
+.\tests\verify_windows_installer.ps1 -InstallerPath .\build\winSwitch-0.2.0-windows-x64.exe
+```
+
+该脚本会静默安装到含空格的临时路径，验证 Qt/MSVC 文件、启动注册表值和真实程序启动，再在程序运行时卸载并确认进程、安装目录和启动项被清理。2026-08-13 已在当前工作区通过上述完整流程。
 
 ### 6.2 自动化现状
 
-- `CMakeLists.txt` 已启用 CTest，当前有 `ui_sizing` 与 `switcher_panel` 两个 Qt Test 目标。
-- GitHub Actions 当前只在 `windows-latest` 构建和打包。
-- tag `v*` 会创建 GitHub Release，上传 Windows zip。
-- README 中“Windows/macOS/Linux 三端自动编译”和三种包名的说明已经过时，需要与工作流统一。
+- `CMakeLists.txt` 已启用 CTest，当前有 `config_paths`、`ui_sizing`、`switcher_panel` 与 `main_window_lifecycle` 四个 Qt Test 目标。
+- GitHub Actions 当前只在 `windows-latest` 构建，并生成便携 zip 与 Inno Setup 安装器。
+- CI 会执行安装器端到端验证；tag `v*` 会创建 GitHub Release，同时上传 Windows zip 和安装器。
+- macOS/Linux 当前没有 CI 构建，恢复相应 job 后再扩充分发说明。
 
 ### 6.3 最低验证矩阵
 
 | 范围 | 必测项 |
 |---|---|
 | 构建 | Debug/Release；干净构建；Windows CI |
+| 安装包 | 普通用户安装；Qt/MSVC 运行库；含空格路径；开机启动；运行中升级/卸载；启动项和安装目录清理 |
 | 配置 | 无配置、旧配置、损坏 JSON、只读目录、导入导出、热键回滚 |
 | 窗口 | 普通 Win32、Explorer、Chromium、Electron、UWP/商店应用、管理员窗口、最小化窗口 |
 | 面板 | 0/1/大量窗口；长标题；重复标题；搜索无结果；快速重复唤出 |
@@ -279,8 +296,8 @@ Windows 构建会在 `winSwitch` 链接完成后自动调用 Qt 安装目录中�
 2. 窗口右键/更多菜单：最小化、最大化、移动到屏幕、结束任务（需明确危险等级）。
 3. 可配置面板尺寸、紧凑模式、缩略图大小和显示屏策略。
 4. 搜索结果高亮、模糊匹配、拼音首字母和最近搜索；先验证性能再扩展。
-5. 开机启动、暂停热键、临时隐私模式。
-6. 安装器、代码签名、自动更新、版本变更日志和许可证说明。
+5. 暂停热键、临时隐私模式，以及 macOS/Linux 的开机启动实现。
+6. 代码签名、自动更新、版本变更日志和许可证说明。
 7. 无障碍名称、屏幕阅读器、对比度和完整键盘操作验证。
 
 ### P3：跨平台专项
@@ -386,6 +403,7 @@ Windows 构建会在 `winSwitch` 链接完成后自动调用 Qt 安装目录中�
 ### 每次发布前
 
 - [ ] 从干净环境安装/解压并首次启动。
+- [ ] 验证安装后开机启动、运行中升级/卸载以及启动项和安装目录清理。
 - [ ] 验证无配置、旧配置和损坏配置升级路径。
 - [ ] 验证 100%/125%/150%/200% 缩放和至少一种双屏组合。
 - [ ] 验证普通用户与管理员权限窗口的差异并记录限制。
@@ -419,3 +437,5 @@ ctest --test-dir build -C Release --output-on-failure
 本轮按用户要求未执行完整人工显示矩阵。以下项目仍待人工验证，且不能据此记录为已通过：1280×720/1920×1080、100%/125%/150% DPI、深色标题栏视觉效果、四种预览状态、空状态与长筛选项、键盘/关闭/置顶交互，以及 30 次快速显示/隐藏压力场景。
 
 本次维护基线记录了已完成的 Windows UI 优化、自动化测试、Qt 运行时部署和仍待完成的功能类别；没有把“整组关闭确认”列为待办，整组关闭保持直接执行。
+
+2026-08-13 在 Windows 11、Qt 6.8.0、MSVC 2022、CMake 4.3.4 和 Inno Setup 6.7.3 环境新增验证：Release 安装包生成成功；`config_paths`、`ui_sizing`、`switcher_panel`、`main_window_lifecycle` 共 4/4 通过；Qt 部署检查通过；安装器静默安装、Qt/MSVC 运行库、HKCU 开机启动、真实启动、运行中卸载、注册表及安装目录清理全部通过。

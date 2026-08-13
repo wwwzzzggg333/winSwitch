@@ -22,7 +22,7 @@
 
 ## 构建
 
-**依赖**：Qt 6.2+（Widgets）、CMake 3.16+；Linux 还需 `libx11-dev`。
+**依赖**：Qt 6.3+（Widgets）、CMake 3.27+；Linux 还需 `libx11-dev`。
 
 ### 本地构建
 
@@ -38,17 +38,29 @@ cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
 cmake --build build --config Release
 ```
 
+### 构建 Windows 安装包
+
+安装 [Inno Setup 6+](https://jrsoftware.org/isdl.php) 后执行：
+
+```powershell
+cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\msvc2022_64"
+cmake --build build --config Release --target package
+```
+
+安装包输出到 `build/winSwitch-<版本>-windows-x64.exe`。程序安装到当前用户的 `%LOCALAPPDATA%\Programs\winSwitch`，无需管理员权限；安装后会创建桌面和开始菜单快捷方式，并为当前用户启用开机启动，卸载时会清理开机启动项。安装包已包含 Qt 和 MSVC 运行库，目标电脑无需另行安装开发环境。
+
 ### GitHub Actions 自动构建
 
-推送到 `main` / `master` 分支后，会在 **Windows** 上自动编译，并打包为 zip。构建产物可在 Actions 页面的 **Artifacts** 中下载：
+推送到 `main` / `master` 分支后，会在 **Windows** 上自动编译，同时生成免安装 zip 和安装器。构建产物可在 Actions 页面的 **Artifacts** 中下载：
 
 - `package-winSwitch-windows-x64.zip`（含 Qt 运行库，可直接运行）
+- `winSwitch-<版本>-windows-x64.exe`（安装后自动启用开机启动）
 
 > 历史版本曾在 Windows / macOS / Linux 三端构建；当前 workflow 仅保留 Windows。
 
 ### 发布 Release
 
-打版本标签并推送后，CI 会自动创建 GitHub Release 并上传上述 zip：
+打版本标签并推送后，CI 会自动创建 GitHub Release 并上传上述 zip 和安装器：
 
 ```bash
 git tag v0.1.0
@@ -61,7 +73,7 @@ Release 页面：`https://github.com/wwwzzzggg333/winSwitch/releases`
 
 配置文件：`config.json`（与 exe 同目录，或 `%APPDATA%/winSwitch/` / `~/.config/winSwitch/`）。
 
-字段：`hotkey`、`thumbnail`、`panel_width`、`panel_height`、`language`（auto/zh/en）、`mru_enabled`、`pinned`、`excluded`。
+字段：`hotkey`、`thumbnail`、`panel_width`、`panel_height`、`language`（auto/zh/en）、`start_at_login`、`mru_enabled`、`pinned`、`excluded`。
 
 修改快捷键或语言后需重启。
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.27)
 project(winSwitch VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -7,11 +7,12 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Test)
+find_package(Qt6 6.3 REQUIRED COMPONENTS Core Gui Widgets Test)
 include(CTest)
 
 set(CORE_SOURCES
     src/core/Config.cpp
+    src/core/ConfigPaths.cpp
     src/core/WindowModel.cpp
     src/core/I18n.cpp
     src/core/AppLog.cpp
@@ -150,8 +151,33 @@ install(TARGETS winSwitch
     RUNTIME DESTINATION bin
     BUNDLE DESTINATION .
 )
+install(FILES README.md DESTINATION .)
+install(FILES packaging/installed.marker DESTINATION .)
+install(PROGRAMS packaging/stop_winswitch.ps1 DESTINATION .)
+
+if(WIN32)
+    include(InstallRequiredSystemLibraries)
+    qt_generate_deploy_app_script(
+        TARGET winSwitch
+        OUTPUT_SCRIPT deploy_script
+        NO_TRANSLATIONS
+        POST_EXCLUDE_REGEXES ".*[\\/]system32[\\/].*\\.dll"
+    )
+    install(SCRIPT ${deploy_script})
+endif()
 
 if(BUILD_TESTING)
+    qt_add_executable(test_config_paths
+        tests/test_config_paths.cpp
+        src/core/ConfigPaths.cpp
+    )
+    target_include_directories(test_config_paths PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(test_config_paths PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME config_paths COMMAND test_config_paths)
+    set_tests_properties(config_paths PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
+    )
+
     qt_add_executable(test_ui_sizing
         tests/test_ui_sizing.cpp
         src/ui/UiSizing.cpp
@@ -170,6 +196,7 @@ if(BUILD_TESTING)
         src/core/WindowModel.cpp
         src/core/I18n.cpp
         src/core/Config.cpp
+        src/core/ConfigPaths.cpp
         src/core/AppLog.cpp
     )
     target_include_directories(test_switcher_panel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -213,4 +240,44 @@ if(BUILD_TESTING)
     set_tests_properties(main_window_lifecycle PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;$ENV{PATH}"
     )
+endif()
+
+if(WIN32)
+    find_program(INNOSETUP_COMPILER
+        NAMES ISCC.exe
+        HINTS
+            "$ENV{LOCALAPPDATA}/Programs/Inno Setup 6"
+            "$ENV{LOCALAPPDATA}/Programs/Inno Setup 7"
+            "$ENV{ProgramFiles}/Inno Setup 6"
+            "$ENV{ProgramFiles}/Inno Setup 7"
+            "$ENV{ProgramFiles\(x86\)}/Inno Setup 6"
+            "$ENV{ProgramFiles\(x86\)}/Inno Setup 7"
+    )
+    set(CPACK_VERBATIM_VARIABLES YES)
+    set(CPACK_GENERATOR "INNOSETUP")
+    set(CPACK_PACKAGE_NAME "winSwitch")
+    set(CPACK_PACKAGE_VENDOR "winSwitch")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Fast keyboard-driven window switcher for Windows")
+    set(CPACK_PACKAGE_FILE_NAME "winSwitch-${PROJECT_VERSION}-windows-x64")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "winSwitch")
+    set(CPACK_PACKAGE_EXECUTABLES "winSwitch" "winSwitch")
+    set(CPACK_CREATE_DESKTOP_LINKS "winSwitch")
+    set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+    set(CPACK_INNOSETUP_INSTALL_ROOT "{localappdata}\\Programs")
+    if(INNOSETUP_COMPILER)
+        set(CPACK_INNOSETUP_EXECUTABLE "${INNOSETUP_COMPILER}")
+    endif()
+    set(CPACK_INNOSETUP_ICON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/winswitch.ico")
+    set(CPACK_INNOSETUP_USE_MODERN_WIZARD ON)
+    set(CPACK_INNOSETUP_IGNORE_LICENSE_PAGE ON)
+    set(CPACK_INNOSETUP_IGNORE_README_PAGE OFF)
+    set(CPACK_INNOSETUP_RUN_EXECUTABLES "winSwitch")
+    set(CPACK_INNOSETUP_EXTRA_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/packaging/winswitch.iss")
+    set(CPACK_INNOSETUP_SETUP_PrivilegesRequired "lowest")
+    set(CPACK_INNOSETUP_SETUP_CloseApplications "force")
+    set(CPACK_INNOSETUP_SETUP_RestartApplications OFF)
+    set(CPACK_INNOSETUP_SETUP_UninstallDisplayIcon "{app}\\bin\\winSwitch.exe")
+
+    include(CPack)
 endif()

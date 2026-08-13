@@ -4,7 +4,7 @@
 
 本目录用于沉淀 `winSwitch` 的项目分析、功能规划和版本路线图，方便开发、产品、测试和管理侧快速查阅。
 
-> 当前代码事实与维护入口：[`project-maintenance-guide.md`](project-maintenance-guide.md)。该文档基于 v0.2.0 实际代码和 Windows 11 界面整理；其余 v0.2 规划文档主要作为历史设计资料。
+> 当前代码事实与维护入口：[`project-maintenance-guide.md`](project-maintenance-guide.md)。该文档基于 v0.2.0 实际代码、Windows 11 界面和当前用户安装包整理；其余 v0.2 规划文档主要作为历史设计资料。
 
 ## 阅读顺序
 

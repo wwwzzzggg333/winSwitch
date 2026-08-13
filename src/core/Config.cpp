@@ -1,4 +1,5 @@
 #include "core/Config.h"
+#include "core/ConfigPaths.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -14,13 +15,8 @@ namespace {
 
 QString writableDataDir() {
     const QString exeDir = QCoreApplication::applicationDirPath();
-    const QString probe = exeDir + QStringLiteral("/.ms_write_test");
-    QFile probeFile(probe);
-    if (probeFile.open(QIODevice::WriteOnly)) {
-        probeFile.remove();
-        return exeDir;
-    }
-    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    const QString appConfigDir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    return ConfigPaths::writableDataDir(exeDir, appConfigDir);
 }
 
 void trimMruTimes(QHash<QString, qint64> *mruTimes) {
