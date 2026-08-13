@@ -50,7 +50,7 @@
 | 筛选横向滚动 | 顶部筛选项溢出时可横向滚动；兼容触控板像素增量和非整格滚轮增量，并保留原生水平滚动 | `src/ui/SwitcherPanel.cpp` |
 | 长筛选标签 | 过长应用名限制宽度并省略显示，完整名称保留在工具提示中 | `src/ui/SwitcherPanel.cpp` |
 | 分组标题层级 | 应用名与窗口数量使用独立标签和不同视觉层级 | `src/ui/SwitcherPanel.cpp`、`resources/styles/app.qss` |
-| 自动化测试 | Qt Test 覆盖配置路径策略、安全尺寸、空状态、筛选滚动、整组关闭和主窗口生命周期；当前 CTest 共 4 项 | `tests/test_config_paths.cpp`、`tests/test_ui_sizing.cpp`、`tests/test_switcher_panel.cpp`、`tests/test_main_window_lifecycle.cpp` |
+| 自动化测试 | Qt Test 覆盖配置路径策略、安全尺寸、空状态、筛选滚动、整组关闭和主窗口生命周期；PowerShell 回归测试覆盖安装验证所需的注册表缺失场景；当前 CTest 共 5 项 | `tests/test_config_paths.cpp`、`tests/test_ui_sizing.cpp`、`tests/test_switcher_panel.cpp`、`tests/test_main_window_lifecycle.cpp`、`tests/test_installer_verification_helpers.ps1` |
 | Qt 本地运行时部署 | Windows Debug/Release 构建后自动用 `windeployqt` 将 Qt DLL 部署到 EXE 输出目录、平台插件部署到其子目录；分发时保留完整部署目录树 | `CMakeLists.txt`、`tests/verify_windows_deployment.ps1` |
 | Windows 当前用户安装包 | CPack + Inno Setup 生成无需管理员权限的安装器，包含 Qt/MSVC 运行库、桌面/开始菜单快捷方式、开机启动注册和卸载清理 | `CMakeLists.txt`、`packaging/*`、`tests/verify_windows_installer.ps1` |
 
@@ -71,7 +71,7 @@
 
 ### 2.3 未实现或尚不完整的工程能力
 
-- 自动化测试已建立最小基线：当前有 4 个 Qt Test 目标和 Windows 安装器端到端脚本；仍缺 Config 完整读写、WindowModel、平台层和端到端 UI 自动化覆盖。
+- 自动化测试已建立最小基线：当前有 4 个 Qt Test 目标、1 个安装验证 PowerShell 回归测试和 Windows 安装器端到端脚本；仍缺 Config 完整读写、WindowModel、平台层和端到端 UI 自动化覆盖。
 - 崩溃报告、日志轮转、诊断信息复制/导出。
 - 无障碍语义、完整键盘焦点可视化、高 DPI/缩放矩阵验证。
 - 自动更新、正式代码签名和签名证书管理。
@@ -439,3 +439,5 @@ ctest --test-dir build -C Release --output-on-failure
 本次维护基线记录了已完成的 Windows UI 优化、自动化测试、Qt 运行时部署和仍待完成的功能类别；没有把“整组关闭确认”列为待办，整组关闭保持直接执行。
 
 2026-08-13 在 Windows 11、Qt 6.8.0、MSVC 2022、CMake 4.3.4 和 Inno Setup 6.7.3 环境新增验证：Release 安装包生成成功；`config_paths`、`ui_sizing`、`switcher_panel`、`main_window_lifecycle` 共 4/4 通过；Qt 部署检查通过；安装器静默安装、Qt/MSVC 运行库、HKCU 开机启动、真实启动、运行中卸载、注册表及安装目录清理全部通过。
+
+2026-08-14 修复 GitHub Runner 初始用户缺少 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 键时安装验证提前退出的问题；新增注册表可选值回归测试并接入 CTest，Release 共 5/5 通过，安装器端到端验证再次通过。

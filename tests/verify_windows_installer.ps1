@@ -5,6 +5,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+. "$PSScriptRoot/installer_verification_helpers.ps1"
+
 $resolvedInstaller = (Resolve-Path -LiteralPath $InstallerPath).Path
 $installDir = Join-Path $env:TEMP "winSwitch installer test $([Guid]::NewGuid().ToString('N'))"
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
@@ -20,11 +22,10 @@ try {
         throw 'Installer verification requires no pre-existing winSwitch.exe process'
     }
 
-    try {
-        $previousValue = Get-ItemPropertyValue -LiteralPath $runKey -Name $valueName
+    $previousStartupValue = Get-OptionalRegistryValue -LiteralPath $runKey -Name $valueName
+    if ($previousStartupValue.Exists) {
+        $previousValue = $previousStartupValue.Value
         $hadPreviousValue = $true
-    } catch [System.Management.Automation.PSArgumentException] {
-        # The value did not exist before this test.
     }
 
     $install = Start-Process -FilePath $resolvedInstaller -ArgumentList @(
@@ -61,9 +62,9 @@ try {
     }
 
     $expectedStartupValue = '"{0}"' -f $installedExe
-    $actualStartupValue = Get-ItemPropertyValue -LiteralPath $runKey -Name $valueName
-    if ($actualStartupValue -ne $expectedStartupValue) {
-        throw "Unexpected startup registry value. Expected '$expectedStartupValue', got '$actualStartupValue'"
+    $actualStartupValue = Get-OptionalRegistryValue -LiteralPath $runKey -Name $valueName
+    if (-not $actualStartupValue.Exists -or $actualStartupValue.Value -ne $expectedStartupValue) {
+        throw "Unexpected startup registry value. Expected '$expectedStartupValue', got '$($actualStartupValue.Value)'"
     }
 
     $appProcess = Start-Process -FilePath $installedExe -PassThru
@@ -98,7 +99,7 @@ try {
         }
         throw "Uninstaller left the application executable behind: $installedExe`n$logTail"
     }
-    if ($null -ne (Get-ItemProperty -LiteralPath $runKey -Name $valueName -ErrorAction SilentlyContinue)) {
+    if ((Get-OptionalRegistryValue -LiteralPath $runKey -Name $valueName).Exists) {
         throw 'Uninstaller did not remove the winSwitch startup registry value'
     }
     if ($appProcess -and -not $appProcess.HasExited) {

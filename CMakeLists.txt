@@ -167,6 +167,15 @@ if(WIN32)
 endif()
 
 if(BUILD_TESTING)
+    if(WIN32)
+        find_program(POWERSHELL_EXECUTABLE NAMES pwsh powershell REQUIRED)
+        add_test(
+            NAME installer_verification_helpers
+            COMMAND "${POWERSHELL_EXECUTABLE}" -NoProfile -File
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_installer_verification_helpers.ps1"
+        )
+    endif()
+
     qt_add_executable(test_config_paths
         tests/test_config_paths.cpp
         src/core/ConfigPaths.cpp
