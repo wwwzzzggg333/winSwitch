@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
-project(winSwitch VERSION 0.2.1 LANGUAGES CXX)
+project(winSwitch VERSION 0.2.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.3 REQUIRED COMPONENTS Core Gui Widgets Test)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Test)
 include(CTest)
 
 set(CORE_SOURCES
@@ -87,6 +87,13 @@ qt_add_executable(winSwitch
 )
 
 if(WIN32)
+    set(WINSWITCH_WINDEPLOYQT_TRIM_OPTIONS
+        --no-opengl-sw
+        --no-system-d3d-compiler
+        --no-system-dxc-compiler
+        --skip-plugin-types generic
+        --exclude-plugins qsvg,qsvgicon
+    )
     get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
     get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
     find_program(WINDEPLOYQT_EXECUTABLE
@@ -100,8 +107,7 @@ if(WIN32)
         COMMAND "${WINDEPLOYQT_EXECUTABLE}"
             --$<IF:$<CONFIG:Debug>,debug,release>
             --no-translations
-            --no-opengl-sw
-            --no-system-d3d-compiler
+            ${WINSWITCH_WINDEPLOYQT_TRIM_OPTIONS}
             "$<TARGET_FILE:winSwitch>"
         COMMENT "Deploying Qt runtime dependencies beside winSwitch"
         VERBATIM
@@ -161,6 +167,7 @@ if(WIN32)
         TARGET winSwitch
         OUTPUT_SCRIPT deploy_script
         NO_TRANSLATIONS
+        DEPLOY_TOOL_OPTIONS ${WINSWITCH_WINDEPLOYQT_TRIM_OPTIONS}
         POST_EXCLUDE_REGEXES ".*[\\/]system32[\\/].*\\.dll"
     )
     install(SCRIPT ${deploy_script})

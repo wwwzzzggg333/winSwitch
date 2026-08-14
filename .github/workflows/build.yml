@@ -41,8 +41,10 @@ jobs:
       - name: Package
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
           $packageName = "winSwitch-windows-x64"
-          $outDir = "packages/$packageName"
+          $outDir = Join-Path (Get-Location) "packages/$packageName"
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
           if (Test-Path "build/Release/winSwitch.exe") {
@@ -54,8 +56,19 @@ jobs:
           }
 
           Copy-Item $exe "$outDir/winSwitch.exe"
-          windeployqt --release --no-translations --no-opengl-sw --no-system-d3d-compiler "$outDir/winSwitch.exe"
+          windeployqt --release --no-translations --no-opengl-sw --no-system-d3d-compiler --no-system-dxc-compiler --skip-plugin-types generic --exclude-plugins 'qsvg,qsvgicon' "$outDir/winSwitch.exe"
+
+          $runtimeStage = Join-Path (Get-Location) "build/portable-runtime-stage"
+          cmake --install build --config Release --prefix $runtimeStage
+          $runtimeFiles = @(Get-ChildItem "$runtimeStage/bin" -File | Where-Object {
+            $_.Name -match '^(concrt|msvcp|vcruntime).*\.dll$'
+          })
+          if ($runtimeFiles.Count -eq 0) {
+            throw "MSVC compiler runtime files were not found in the CMake install staging directory"
+          }
+          Copy-Item $runtimeFiles.FullName -Destination $outDir
           Copy-Item README.md $outDir/
+          ./tests/verify_deployment_contents.ps1 -PackageRoot $outDir -MaximumSizeMiB 30 -RequireCompilerRuntime
           Compress-Archive -Path $outDir -DestinationPath "packages/$packageName-portable.zip"
 
           cmake --build build --config Release --target package

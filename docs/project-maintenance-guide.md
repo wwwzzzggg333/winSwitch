@@ -1,8 +1,8 @@
 # winSwitch 项目维护与功能演进指南
 
 > 文档定位：当前代码事实基线、接手维护手册和后续功能清单
-> 基线日期：2026-08-13
-> 代码版本：`0.2.1` + Windows UI 与当前用户安装包基线（以本文件所在提交为准）
+> 基线日期：2026-08-14
+> 代码版本：`0.2.2` + Windows UI 与当前用户安装包基线（以本文件所在提交为准）
 > 主要验证环境：Windows 11、Qt 6.8.0、MSVC 2022、CMake 3.27+
 
 ## 1. 结论摘要
@@ -234,10 +234,12 @@ cmake --build build --config Release --target package
 安装器端到端检查命令：
 
 ```powershell
-.\tests\verify_windows_installer.ps1 -InstallerPath .\build\winSwitch-0.2.1-windows-x64.exe
+.\tests\verify_windows_installer.ps1 -InstallerPath .\build\winSwitch-0.2.2-windows-x64.exe
 ```
 
-该脚本会静默安装到含空格的临时路径，验证 Qt/MSVC 文件、启动注册表值和真实程序启动，再在程序运行时卸载并确认进程、安装目录和启动项被清理。2026-08-13 已在当前工作区通过上述完整流程。
+该脚本会静默安装到含空格的临时路径，验证 Qt/MSVC 文件、启动注册表值和真实程序启动，再在程序运行时卸载并确认进程、安装目录和启动项被清理。2026-08-14 已在当前工作区通过上述完整流程。
+
+v0.2.2 起，安装版与便携版统一排除当前 QWidget 功能未使用的软件 OpenGL、D3D/DXC 编译器、TUIO 网络触控和 SVG 运行库，并对部署目录设置体积上限。便携版仍显式包含 MSVC 运行库，确保在未预装 Visual C++ Redistributable 的系统上可直接运行。
 
 ### 6.2 自动化现状
 
@@ -317,6 +319,12 @@ cmake --build build --config Release --target package
 - 建立首批 core 单元测试。
 
 完成标准：核心纯逻辑有稳定测试；关闭行为不再假成功；缩略图失败可解释；文档不再与 CI/代码冲突。
+
+### v0.2.2：Windows 发布包精简
+
+- 统一安装版与便携版的 Qt 部署参数，移除未使用的图形编译器、网络触控和 SVG 依赖。
+- 便携版显式携带 MSVC 运行库，保持开箱即用。
+- CI 同时检查安装版与便携版的必要文件、冗余 DLL 和部署体积。
 
 ### v0.3：Windows 体验完善
 

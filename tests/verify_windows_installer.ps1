@@ -60,6 +60,14 @@ try {
     if ($missing.Count -gt 0) {
         throw "Installed package is missing: $($missing -join ', ')"
     }
+    $deploymentVerification = @{
+        PackageRoot = $installDir
+        BinDirectory = 'bin'
+        PluginDirectory = 'plugins'
+        MaximumSizeMiB = 35
+        RequireCompilerRuntime = $true
+    }
+    & "$PSScriptRoot/verify_deployment_contents.ps1" @deploymentVerification
 
     $expectedStartupValue = '"{0}"' -f $installedExe
     $actualStartupValue = Get-OptionalRegistryValue -LiteralPath $runKey -Name $valueName
