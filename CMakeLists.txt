@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
-project(winSwitch VERSION 0.2.0 LANGUAGES CXX)
+project(winSwitch VERSION 0.2.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -271,7 +271,7 @@ if(WIN32)
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "winSwitch")
     set(CPACK_PACKAGE_EXECUTABLES "winSwitch" "winSwitch")
     set(CPACK_CREATE_DESKTOP_LINKS "winSwitch")
-    set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+    set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/packaging/installer-readme.txt")
 
     set(CPACK_INNOSETUP_INSTALL_ROOT "{localappdata}\\Programs")
     if(INNOSETUP_COMPILER)

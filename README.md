@@ -53,8 +53,8 @@ cmake --build build --config Release --target package
 
 推送到 `main` / `master` 分支后，会在 **Windows** 上自动编译，同时生成免安装 zip 和安装器。构建产物可在 Actions 页面的 **Artifacts** 中下载：
 
-- `package-winSwitch-windows-x64.zip`（含 Qt 运行库，可直接运行）
-- `winSwitch-<版本>-windows-x64.exe`（安装后自动启用开机启动）
+- `winSwitch-windows-x64-portable.zip`（含 Qt 运行库，解压即可运行）
+- `winSwitch-<版本>-windows-x64-setup.exe`（独立安装包，安装后自动启用开机启动）
 
 > 历史版本曾在 Windows / macOS / Linux 三端构建；当前 workflow 仅保留 Windows。
 
@@ -63,8 +63,8 @@ cmake --build build --config Release --target package
 打版本标签并推送后，CI 会自动创建 GitHub Release 并上传上述 zip 和安装器：
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 Release 页面：`https://github.com/wwwzzzggg333/winSwitch/releases`

@@ -2,7 +2,7 @@
 
 > 文档定位：当前代码事实基线、接手维护手册和后续功能清单
 > 基线日期：2026-08-13
-> 代码版本：`0.2.0` + Windows UI 与当前用户安装包基线（以本文件所在提交为准）
+> 代码版本：`0.2.1` + Windows UI 与当前用户安装包基线（以本文件所在提交为准）
 > 主要验证环境：Windows 11、Qt 6.8.0、MSVC 2022、CMake 3.27+
 
 ## 1. 结论摘要
@@ -52,7 +52,7 @@
 | 分组标题层级 | 应用名与窗口数量使用独立标签和不同视觉层级 | `src/ui/SwitcherPanel.cpp`、`resources/styles/app.qss` |
 | 自动化测试 | Qt Test 覆盖配置路径策略、安全尺寸、空状态、筛选滚动、整组关闭和主窗口生命周期；PowerShell 回归测试覆盖安装验证所需的注册表缺失场景；当前 CTest 共 5 项 | `tests/test_config_paths.cpp`、`tests/test_ui_sizing.cpp`、`tests/test_switcher_panel.cpp`、`tests/test_main_window_lifecycle.cpp`、`tests/test_installer_verification_helpers.ps1` |
 | Qt 本地运行时部署 | Windows Debug/Release 构建后自动用 `windeployqt` 将 Qt DLL 部署到 EXE 输出目录、平台插件部署到其子目录；分发时保留完整部署目录树 | `CMakeLists.txt`、`tests/verify_windows_deployment.ps1` |
-| Windows 当前用户安装包 | CPack + Inno Setup 生成无需管理员权限的安装器，包含 Qt/MSVC 运行库、桌面/开始菜单快捷方式、开机启动注册和卸载清理 | `CMakeLists.txt`、`packaging/*`、`tests/verify_windows_installer.ps1` |
+| Windows 当前用户安装包 | CPack + Inno Setup 生成无需管理员权限的安装器，包含面向用户的中英文功能说明、Qt/MSVC 运行库、桌面/开始菜单快捷方式、开机启动注册和卸载清理 | `CMakeLists.txt`、`packaging/installer-readme.txt`、`packaging/winswitch.iss`、`tests/verify_windows_installer.ps1` |
 
 ### 2.2 部分实现或有明显限制
 
@@ -234,7 +234,7 @@ cmake --build build --config Release --target package
 安装器端到端检查命令：
 
 ```powershell
-.\tests\verify_windows_installer.ps1 -InstallerPath .\build\winSwitch-0.2.0-windows-x64.exe
+.\tests\verify_windows_installer.ps1 -InstallerPath .\build\winSwitch-0.2.1-windows-x64.exe
 ```
 
 该脚本会静默安装到含空格的临时路径，验证 Qt/MSVC 文件、启动注册表值和真实程序启动，再在程序运行时卸载并确认进程、安装目录和启动项被清理。2026-08-13 已在当前工作区通过上述完整流程。
@@ -243,7 +243,7 @@ cmake --build build --config Release --target package
 
 - `CMakeLists.txt` 已启用 CTest，当前有 `config_paths`、`ui_sizing`、`switcher_panel` 与 `main_window_lifecycle` 四个 Qt Test 目标。
 - GitHub Actions 当前只在 `windows-latest` 构建，并生成便携 zip 与 Inno Setup 安装器。
-- CI 会执行安装器端到端验证；tag `v*` 会创建 GitHub Release，同时上传 Windows zip 和安装器。
+- CI 会执行安装器端到端验证；tag `v*` 会创建 GitHub Release，并将开箱即用的 `*-portable.zip` 与独立安装包 `*-setup.exe` 作为两个资产分别上传。
 - macOS/Linux 当前没有 CI 构建，恢复相应 job 后再扩充分发说明。
 
 ### 6.3 最低验证矩阵

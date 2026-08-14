@@ -56,20 +56,20 @@ jobs:
           Copy-Item $exe "$outDir/winSwitch.exe"
           windeployqt --release --no-translations --no-opengl-sw --no-system-d3d-compiler "$outDir/winSwitch.exe"
           Copy-Item README.md $outDir/
-          Compress-Archive -Path $outDir -DestinationPath "packages/$packageName.zip"
+          Compress-Archive -Path $outDir -DestinationPath "packages/$packageName-portable.zip"
 
           cmake --build build --config Release --target package
           $installer = Get-Item "build/winSwitch-*-windows-x64.exe"
           ./tests/verify_windows_installer.ps1 -InstallerPath $installer.FullName
-          Copy-Item $installer.FullName packages/
+          Copy-Item $installer.FullName "packages/$($installer.BaseName)-setup.exe"
 
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
           name: package-winSwitch-windows-x64
           path: |
-            packages/winSwitch-windows-x64.zip
-            packages/winSwitch-*-windows-x64.exe
+            packages/winSwitch-windows-x64-portable.zip
+            packages/winSwitch-*-windows-x64-setup.exe
           if-no-files-found: error
 
   release:
