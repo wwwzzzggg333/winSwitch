@@ -2,6 +2,7 @@
 #include "platform/PlatformCapabilities.h"
 #include "platform/windows/WinExplorerPaths.h"
 #include "platform/windows/WinForeground.h"
+#include "platform/windows/WinWgcCapture.h"
 
 #include <windows.h>
 #include <dwmapi.h>
@@ -344,6 +345,33 @@ public:
         if (IsIconic(hwnd)) {
             return {};
         }
+        ImageRgba croppedImg = captureGdi(hwnd);
+        if (!usable(croppedImg)) {
+            // Last resort: Windows Graphics Capture reaches GPU-composited windows
+            // that are occluded (BitBlt only sees what is actually on screen).
+            // Minimized windows never get here — capture() returns early for IsIconic().
+            ImageRgba wgc = captureWindowViaWgc(windowId);
+            if (usable(wgc)) {
+                croppedImg = wgc;
+            }
+        }
+        return finalize(croppedImg);
+    }
+
+    // Fast capture used the moment a window starts to minimize, while it is still on
+    // screen. Skips the minimized-window guard and the WGC fallback: the window may
+    // already report iconic at this point, and WGC would be too slow to finish before
+    // the minimize completes.
+    ImageRgba captureForMinimize(qint64 windowId) override {
+        HWND hwnd = reinterpret_cast<HWND>(windowId);
+        if (!IsWindow(hwnd)) {
+            return {};
+        }
+        return finalize(captureGdi(hwnd));
+    }
+
+private:
+    static ImageRgba captureGdi(HWND hwnd) {
         RECT windowRect{};
         if (!GetWindowRect(hwnd, &windowRect)) {
             return {};
@@ -383,35 +411,66 @@ public:
             ReleaseDC(nullptr, screenDc);
             return {};
         }
+        // Primary: ask the window to render itself into our bitmap. This works for
+        // classic GDI apps but GPU-composited windows (Chromium/Electron, DirectX,
+        // OpenGL) often ignore WM_PRINT and leave a blank or partial frame.
         const BOOL ok = PrintWindow(hwnd, memDc, PW_RENDERFULLCONTENT);
         ImageRgba image;
-        if (!ok || !readDdbToImageRgba(memDc, bmp, fullW, fullH, image)) {
-            SelectObject(memDc, old);
-            DeleteObject(bmp);
-            DeleteDC(memDc);
-            ReleaseDC(nullptr, screenDc);
-            return {};
+        if (ok) {
+            readDdbToImageRgba(memDc, bmp, fullW, fullH, image);
         }
+        ImageRgba croppedImg = cropToFrame(image, windowRect, frameRect);
+        if (!usable(croppedImg)) {
+            // Fallback: copy the window's on-screen region straight from the desktop
+            // surface. DWM already composited the content there, so this recovers
+            // GPU-accelerated windows as long as they are visible on screen.
+            if (BitBlt(memDc, 0, 0, fullW, fullH, screenDc, windowRect.left, windowRect.top, SRCCOPY)) {
+                ImageRgba fallback;
+                if (readDdbToImageRgba(memDc, bmp, fullW, fullH, fallback)) {
+                    croppedImg = cropToFrame(fallback, windowRect, frameRect);
+                }
+            }
+        }
+
         SelectObject(memDc, old);
         DeleteObject(bmp);
         DeleteDC(memDc);
         ReleaseDC(nullptr, screenDc);
 
+        return croppedImg;
+    }
+
+    static ImageRgba finalize(ImageRgba croppedImg) {
+        if (!usable(croppedImg)) {
+            return {};
+        }
+        return downscale(croppedImg);
+    }
+
+    static ImageRgba cropToFrame(const ImageRgba &img, const RECT &windowRect, const RECT &frameRect) {
+        if (img.width <= 0 || img.height <= 0 || img.pixels.isEmpty()) {
+            return {};
+        }
+        const int fullW = img.width;
+        const int fullH = img.height;
         const int cropX = qBound(0, static_cast<int>(frameRect.left - windowRect.left), fullW - 1);
         const int cropY = qBound(0, static_cast<int>(frameRect.top - windowRect.top), fullH - 1);
         const int cropW = qBound(1, static_cast<int>(frameRect.right - frameRect.left), fullW - cropX);
         const int cropH = qBound(1, static_cast<int>(frameRect.bottom - frameRect.top), fullH - cropY);
         QImage src(
-            reinterpret_cast<const uchar *>(image.pixels.constData()),
+            reinterpret_cast<const uchar *>(img.pixels.constData()),
             fullW,
             fullH,
             fullW * 4,
             QImage::Format_RGBA8888);
         QImage cropped = src.copy(cropX, cropY, cropW, cropH);
-        return downscale(imageFromQImage(cropped));
+        return imageFromQImage(cropped);
     }
 
-private:
+    static bool usable(const ImageRgba &img) {
+        return !img.pixels.isEmpty() && !isBlank(img.pixels) && !looksTruncated(img);
+    }
+
     static bool rowIsFlat(const ImageRgba &img, int row) {
         if (row < 0 || row >= img.height || img.width <= 0) {
             return true;

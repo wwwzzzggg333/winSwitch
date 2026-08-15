@@ -40,6 +40,13 @@ bool ApplicationController::initialize() {
     m_windowSource = createWindowSource();
     m_iconCapture = createIconCapture();
     m_thumbnailCapture = createThumbnailCapture();
+    m_windowEventSource = createWindowEventSource();
+    if (m_windowEventSource) {
+        m_windowEventSource->setMinimizeHandler([this](qint64 windowId) {
+            onWindowMinimizing(windowId);
+        });
+        m_windowEventSource->start();
+    }
 
     m_mainWindow = new MainWindow(m_config, m_i18n);
     m_mainWindow->hide();
@@ -212,6 +219,23 @@ QPixmap ApplicationController::toPixmap(const ImageRgba &image) const {
         image.width * 4,
         QImage::Format_RGBA8888);
     return QPixmap::fromImage(img.copy());
+}
+
+void ApplicationController::onWindowMinimizing(qint64 windowId) {
+    if (!m_config.thumbnail || m_thumbs.contains(windowId)) {
+        return;
+    }
+    AppLog::info(QStringLiteral("minimize cache: hwnd=%1").arg(windowId));
+    const ImageRgba img = m_thumbnailCapture->captureForMinimize(windowId);
+    if (!img.pixels.isEmpty()) {
+        m_thumbs.insert(windowId, toPixmap(img));
+        AppLog::info(QStringLiteral("minimize cache ok: hwnd=%1 size=%2x%3")
+                         .arg(windowId)
+                         .arg(img.width)
+                         .arg(img.height));
+    } else {
+        AppLog::warn(QStringLiteral("minimize cache empty: hwnd=%1").arg(windowId));
+    }
 }
 
 void ApplicationController::loadTexturesBatch() {

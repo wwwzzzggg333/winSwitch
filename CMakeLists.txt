@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
-project(winSwitch VERSION 0.2.3 LANGUAGES CXX)
+project(winSwitch VERSION 0.2.4 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -43,7 +43,24 @@ if(WIN32)
     set(WINDOW_SOURCE_SOURCES
         src/platform/windows/WinWindowSource.cpp
         src/platform/windows/WinExplorerPaths.cpp
+        src/platform/windows/WinWgcCapture.cpp
+        src/platform/windows/WinWindowEventSource.cpp
     )
+
+    # Locate the Windows SDK's C++/WinRT projection headers used by the WGC
+    # fallback (they are not on the compiler's default include path).
+    set(_winsdk_include_root "C:/Program Files (x86)/Windows Kits/10/Include")
+    if(DEFINED ENV{WindowsSdkDir} AND IS_DIRECTORY "$ENV{WindowsSdkDir}Include")
+        set(_winsdk_include_root "$ENV{WindowsSdkDir}Include")
+    endif()
+    file(GLOB _winsdk_ver_dirs "${_winsdk_include_root}/10.*")
+    list(SORT _winsdk_ver_dirs)
+    list(REVERSE _winsdk_ver_dirs)
+    if(NOT _winsdk_ver_dirs)
+        message(FATAL_ERROR "Could not locate the Windows SDK cppwinrt headers.")
+    endif()
+    list(GET _winsdk_ver_dirs 0 _latest_sdk_include)
+    set(CPPWINRT_INCLUDE_DIR "${_latest_sdk_include}/cppwinrt")
     set(PLATFORM_RESOURCES resources/winswitch.rc)
     set(PLATFORM_SOURCES
         ${WINDOW_SOURCE_SOURCES}
@@ -117,6 +134,7 @@ endif()
 target_include_directories(winSwitch PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${LINUX_X11_INCLUDES}
+    ${CPPWINRT_INCLUDE_DIR}
 )
 
 target_compile_definitions(winSwitch PRIVATE
@@ -133,6 +151,7 @@ target_link_libraries(winSwitch PRIVATE
 if(WIN32)
     target_link_libraries(winSwitch PRIVATE
         user32 gdi32 dwmapi ole32 oleaut32 shell32 psapi
+        d3d11 dxgi WindowsApp
     )
 elseif(APPLE)
     target_link_libraries(winSwitch PRIVATE
@@ -232,6 +251,7 @@ if(BUILD_TESTING)
     target_include_directories(test_main_window_lifecycle PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${LINUX_X11_INCLUDES}
+        ${CPPWINRT_INCLUDE_DIR}
     )
     target_link_libraries(test_main_window_lifecycle PRIVATE
         Qt6::Core
@@ -243,6 +263,7 @@ if(BUILD_TESTING)
     if(WIN32)
         target_link_libraries(test_main_window_lifecycle PRIVATE
             user32 gdi32 dwmapi ole32 oleaut32 shell32 psapi
+            d3d11 dxgi WindowsApp
         )
     elseif(APPLE)
         target_link_libraries(test_main_window_lifecycle PRIVATE

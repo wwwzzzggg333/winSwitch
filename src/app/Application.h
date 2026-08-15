@@ -40,6 +40,7 @@ private:
     void recordActivation(qint64 windowId);
     QPixmap toPixmap(const ImageRgba &image) const;
     void showHotkeyFailure(const QString &hotkey, const QString &err, HotkeyManager::HotkeyError kind);
+    void onWindowMinimizing(qint64 windowId);
 
     Config m_config;
     I18n m_i18n;
@@ -59,4 +60,5 @@ private:
     QVector<qint64> m_pendingIcons;
     QVector<qint64> m_pendingThumbs;
     bool m_texturesLoading = false;
+    std::unique_ptr<IWindowEventSource> m_windowEventSource;
 };
