@@ -21,6 +21,8 @@
 #if defined(Q_OS_WIN)
 #include <dwmapi.h>
 #include <windows.h>
+
+#include "platform/windows/WinForeground.h"
 #endif
 
 namespace {
@@ -40,6 +42,21 @@ bool applyWindowsDarkTitleBar(QWidget *window) {
     return SUCCEEDED(result);
 }
 #endif
+} // namespace
+
+namespace {
+// Returns the rectangle that centers `size` within `screen`'s available
+// geometry, clamped so its top-left corner never lands above or left of that
+// area (e.g. when the window temporarily exceeds the available space).
+QRect centeredRectOnScreen(QScreen *screen, const QSize &size) {
+    if (!screen) {
+        return QRect(QPoint(0, 0), size);
+    }
+    const QRect geo = screen->availableGeometry();
+    const int x = qMax(geo.left(), geo.x() + (geo.width() - size.width()) / 2);
+    const int y = qMax(geo.top(), geo.y() + (geo.height() - size.height()) / 2);
+    return QRect(QPoint(x, y), size);
+}
 } // namespace
 
 MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
@@ -95,6 +112,19 @@ MainWindow::MainWindow(const Config &config, I18n i18n, QWidget *parent)
 
     qApp->installEventFilter(this);
 
+    // Re-center if the display topology changes (e.g. a monitor is unplugged)
+    // so the panel never remains stranded on a screen that no longer exists.
+    connect(qApp, &QGuiApplication::screenAdded, this, [this](QScreen *) {
+        if (isVisible()) {
+            centerOnScreen();
+        }
+    });
+    connect(qApp, &QGuiApplication::screenRemoved, this, [this](QScreen *) {
+        if (isVisible()) {
+            centerOnScreen();
+        }
+    });
+
 #if defined(Q_OS_WIN)
     if (!applyWindowsDarkTitleBar(this)) {
         AppLog::warn(QStringLiteral("Windows dark title bar is unavailable"));
@@ -124,13 +154,25 @@ QSize MainWindow::panelSize() const {
 }
 
 void MainWindow::centerOnScreen() {
-    QScreen *screen = targetScreen();
-    if (!screen) {
-        return;
-    }
-    const QRect geo = screen->availableGeometry();
     const QSize size = frameGeometry().size();
-    move(geo.x() + (geo.width() - size.width()) / 2, geo.y() + (geo.height() - size.height()) / 2);
+    QRect target = centeredRectOnScreen(targetScreen(), size);
+
+    // If the computed position doesn't intersect any connected screen (the
+    // mouse may be over a monitor that was just disconnected, or a stale
+    // screen geometry may have been returned), fall back to the primary
+    // screen so the window never ends up off the visible desktop.
+    bool intersectsScreen = false;
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    for (QScreen *screen : screens) {
+        if (screen->geometry().intersects(target)) {
+            intersectsScreen = true;
+            break;
+        }
+    }
+    if (!intersectsScreen) {
+        target = centeredRectOnScreen(QApplication::primaryScreen(), size);
+    }
+    move(target.topLeft());
 }
 
 void MainWindow::showPanel(
@@ -146,6 +188,9 @@ void MainWindow::showPanel(
     show();
     raise();
     activateWindow();
+#if defined(Q_OS_WIN)
+    winSwitch::forceForegroundWindow(reinterpret_cast<HWND>(winId()));
+#endif
     m_activationTimer.start();
     QTimer::singleShot(0, m_panel, [panel = m_panel]() { panel->focusSearch(); });
     AppLog::info(QStringLiteral("panel shown, groups=%1").arg(state.groups.size()));
@@ -160,6 +205,9 @@ void MainWindow::showSettings(Config config) {
     show();
     raise();
     activateWindow();
+#if defined(Q_OS_WIN)
+    winSwitch::forceForegroundWindow(reinterpret_cast<HWND>(winId()));
+#endif
 }
 
 void MainWindow::updateTextures(const QHash<qint64, QPixmap> &icons, const QHash<qint64, QPixmap> &thumbs) {

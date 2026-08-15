@@ -1,6 +1,7 @@
 #include "platform/IWindowSource.h"
 #include "platform/PlatformCapabilities.h"
 #include "platform/windows/WinExplorerPaths.h"
+#include "platform/windows/WinForeground.h"
 
 #include <windows.h>
 #include <dwmapi.h>
@@ -292,24 +293,7 @@ public:
     }
 
     void activate(qint64 windowId) override {
-        HWND hwnd = reinterpret_cast<HWND>(windowId);
-        if (IsIconic(hwnd)) {
-            ShowWindow(hwnd, SW_RESTORE);
-        }
-        HWND fg = GetForegroundWindow();
-        const DWORD targetTid = GetWindowThreadProcessId(hwnd, nullptr);
-        const DWORD fgTid = GetWindowThreadProcessId(fg, nullptr);
-        const DWORD curTid = GetCurrentThreadId();
-        AttachThreadInput(curTid, targetTid, TRUE);
-        if (fgTid != 0 && fgTid != curTid) {
-            AttachThreadInput(fgTid, targetTid, TRUE);
-        }
-        BringWindowToTop(hwnd);
-        SetForegroundWindow(hwnd);
-        if (fgTid != 0 && fgTid != curTid) {
-            AttachThreadInput(fgTid, targetTid, FALSE);
-        }
-        AttachThreadInput(curTid, targetTid, FALSE);
+        winSwitch::forceForegroundWindow(reinterpret_cast<HWND>(windowId));
     }
 
     void closeWindow(qint64 windowId) override {
