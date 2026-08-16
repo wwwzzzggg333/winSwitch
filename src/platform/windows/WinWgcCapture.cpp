@@ -1,3 +1,8 @@
+// C++/WinRT's base header includes <experimental/coroutine>, which MSVC 14.51+
+// (VS 2026) marks deprecated with a hard static_assert. Define the official
+// suppression macro before any header so the WGC source builds on newer toolchains.
+#define _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
+
 #include "platform/windows/WinWgcCapture.h"
 
 #define NOMINMAX
